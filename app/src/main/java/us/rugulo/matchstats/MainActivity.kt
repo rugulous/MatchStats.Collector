@@ -11,6 +11,10 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -20,6 +24,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -34,7 +41,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun FootballStatsApp() {
     val pagerState = rememberPagerState(pageCount = { 2 })
@@ -42,6 +49,45 @@ fun FootballStatsApp() {
 
     Scaffold(
         topBar = {
+            CenterAlignedTopAppBar(title = {
+                Text("Record Match Stats")
+            })
+        }
+    ) { padding ->
+
+        Column(modifier = Modifier.padding(padding)) {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ){
+                    Text(
+                        "Totty United vs Glossop\nDevelopment Division Cup",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(0.dp, 5.dp)
+                    )
+
+                    var inProgress by remember { mutableStateOf(false) }
+
+                    if (inProgress) {
+                        Text(
+                            text = "00:00",
+                            fontSize = 22.sp
+                        )
+                    } else {
+                        Button(onClick = { inProgress = true }) {
+                            Text(
+                                text = "Start First Half",
+                                fontSize = 20.sp
+                            )
+                        }
+                    }
+                }
+
+            }
+
+            //tabs for actual stat recording
             TabRow(selectedTabIndex = pagerState.currentPage) {
                 Tab(
                     selected = pagerState.currentPage == 0,
@@ -50,7 +96,8 @@ fun FootballStatsApp() {
                             pagerState.animateScrollToPage(0)
                         }
                     },
-                    modifier = Modifier.padding(12.dp)) {
+                    modifier = Modifier.padding(12.dp)
+                ) {
                     Text("Home")
                 }
                 Tab(
@@ -63,9 +110,8 @@ fun FootballStatsApp() {
                     Text("Away")
                 }
             }
+            TabContent(pagerState)
         }
-    ) { padding ->
-        TabContent(pagerState, modifier = Modifier.padding(padding))
     }
 }
 
@@ -127,4 +173,10 @@ fun CounterButton(label: String, count: Int, onIncrement: () -> Unit, onDecremen
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun Preview(){
+    FootballStatsApp()
 }
