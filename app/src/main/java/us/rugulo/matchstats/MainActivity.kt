@@ -1,9 +1,11 @@
 package us.rugulo.matchstats
 
+import android.database.sqlite.SQLiteDatabase
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -26,12 +28,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import us.rugulo.matchstats.data.Database
+import us.rugulo.matchstats.ui.viewmodel.MatchStatsViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 class MainActivity : ComponentActivity() {
     private lateinit var _db: Database
@@ -54,15 +57,34 @@ class MainActivity : ComponentActivity() {
 
         cursor.close()
 
+        val viewModel: MatchStatsViewModel by viewModels()
+        viewModel.statTypes = getStatTypes(db)
+
         setContent {
-            FootballStatsApp()
+            FootballStatsApp(viewModel = viewModel)
         }
     }
 }
 
+private fun getStatTypes(db: SQLiteDatabase): Map<Int, String> {
+    val statsMap = mutableMapOf<Int, String>()
+
+    val cursor = db.query("StatTypes", null, null, null, null, null, null)
+    cursor.use {
+        while(cursor.moveToNext()){
+            val id = cursor.getInt(cursor.getColumnIndexOrThrow("ID"))
+            val name = cursor.getString(cursor.getColumnIndexOrThrow("Description"))
+            statsMap[id] = name
+            Log.d("DATABASE", "$id = $name")
+        }
+    }
+
+    return statsMap
+}
+
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun FootballStatsApp() {
+fun FootballStatsApp(viewModel: MatchStatsViewModel) {
     val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
 
@@ -87,15 +109,13 @@ fun FootballStatsApp() {
                         modifier = Modifier.padding(0.dp, 5.dp)
                     )
 
-                    var inProgress by remember { mutableStateOf(false) }
-
-                    if (inProgress) {
+                    if (viewModel.inProgress.value) {
                         Text(
                             text = "00:00",
                             fontSize = 22.sp
                         )
                     } else {
-                        Button(onClick = { inProgress = true }) {
+                        Button(onClick = {viewModel.startMatch()}) {
                             Text(
                                 text = "Start First Half",
                                 fontSize = 20.sp
@@ -136,42 +156,43 @@ fun FootballStatsApp() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TabContent(pagerState: PagerState, modifier: Modifier = Modifier){
+fun TabContent(pagerState: PagerState, modifier: Modifier = Modifier, vm: MatchStatsViewModel = viewModel()){
     HorizontalPager(state = pagerState) { index ->
-        val stats = remember {
-            mutableStateMapOf(
-                "Crosses" to (0..10).random(),
-                "Shots" to (0..10).random(),
-                "Shots on Target" to (0..10).random(),
-                "Goals" to (0..10).random(),
-                "Corners" to (0..10).random()
+            StatsScreen(
+                modifier = modifier,
+                isHome = index == 0
             )
-        }
-
-        StatsScreen(
-            modifier = modifier,
-            stats = stats
-        )
     }
 }
 
 @Composable
-fun StatsScreen(stats: MutableMap<String, Int>, modifier: Modifier = Modifier) {
+fun StatsScreen(isHome: Boolean, modifier: Modifier = Modifier, vm: MatchStatsViewModel = viewModel()) {
+    val currentSegment = vm.currentSegment.value // Observe currentSegment directly
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        stats.forEach { (label, count) ->
-            CounterButton(label = label, count = count, onIncrement = {
-                stats[label] = count + 1
-            }, onDecrement = {
-                if (count > 0) stats[label] = count - 1
-            })
+        currentSegment?.let {
+            // Dynamically load homeStats or awayStats based on isHome
+            val stats = if (isHome) it.homeStats else it.awayStats
+
+            // Render each stat button dynamically
+            stats.forEach { (id, count) ->
+                CounterButton(
+                    label = vm.statTypes[id] ?: "Unknown", // Handle unknown stat type
+                    count = count,
+                    onIncrement = { vm.updateStatCount(isHome, id, 1) },
+                    onDecrement = { vm.updateStatCount(isHome, id, -1) }
+                )
+            }
         }
     }
 }
+
+
 
 @Composable
 fun CounterButton(label: String, count: Int, onIncrement: () -> Unit, onDecrement: () -> Unit) {
@@ -197,5 +218,5 @@ fun CounterButton(label: String, count: Int, onIncrement: () -> Unit, onDecremen
 @Preview
 @Composable
 fun Preview(){
-    FootballStatsApp()
+    FootballStatsApp(MatchStatsViewModel())
 }
