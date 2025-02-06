@@ -1,6 +1,7 @@
 package us.rugulo.matchstats
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -30,10 +31,28 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import us.rugulo.matchstats.data.Database
 
 class MainActivity : ComponentActivity() {
+    private lateinit var _db: Database
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        this.deleteDatabase(Database.DATABASE_NAME)
+        _db = Database(this)
+
+        val db = _db.readableDatabase
+        val cursor = db.query("Matches", null, null, null, null, null, null)
+
+        with(cursor) {
+            while(moveToNext()){
+                val id = getInt(0)
+                Log.d("TEST", id.toString())
+            }
+        }
+
+        cursor.close()
 
         setContent {
             FootballStatsApp()
