@@ -1,7 +1,6 @@
 package us.rugulo.matchstats
 
 import android.app.Application
-import android.content.Intent
 import us.rugulo.matchstats.data.Database
 import us.rugulo.matchstats.data.repository.MatchSegmentRepository
 

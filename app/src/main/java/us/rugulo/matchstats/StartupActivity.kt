@@ -8,14 +8,13 @@ class StartupActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val resumeIntent = Intent(this, MainActivity::class.java)
-
         val matchInProgress = (applicationContext as MatchStatsApp).matchSegmentRepository.checkForIncompleteMatch()
         if(matchInProgress != null){
+            val resumeIntent = Intent(this, MainActivity::class.java)
             resumeIntent.putExtra("ID", matchInProgress)
+            startActivity(resumeIntent)
         }
 
-        startActivity(resumeIntent)
         finish()
     }
 }

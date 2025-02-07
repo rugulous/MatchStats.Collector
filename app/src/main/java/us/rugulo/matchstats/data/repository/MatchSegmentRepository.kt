@@ -2,6 +2,7 @@ package us.rugulo.matchstats.data.repository
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
+import android.util.Log
 import us.rugulo.matchstats.data.Database
 import us.rugulo.matchstats.data.MatchSegmentType
 import us.rugulo.matchstats.models.MatchSegment
@@ -73,7 +74,8 @@ class MatchSegmentRepository(db: Database) {
         var matchId: Int? = null
 
         val con = _db.readableDatabase
-        val cursor = con.rawQuery("SELECT m.ID FROM Matches m INNER JOIN MatchSegments ms ON ms.MatchId = m.ID WHERE ms.EndTime IS NULL", null)
+        //search for segments without an end, or for matches with an odd number of segments (1H without 2H, 1H/2H/1ET without 2ET)
+        val cursor = con.rawQuery("SELECT MatchId FROM MatchSegments GROUP BY MatchId HAVING COUNT(*) % 2 = 1 OR SUM(CASE WHEN EndTime IS NULL THEN 1 ELSE 0 END) > 0;", null)
 
         if(cursor.moveToNext()){
             matchId = cursor.getInt(0)
@@ -118,6 +120,24 @@ class MatchSegmentRepository(db: Database) {
         return segment
     }
 
+    fun getNextSegment(matchId: Int): Pair<MatchSegmentType, String>{
+        var name = "Match"
+        var type = MatchSegmentType.FIRST_HALF
+
+        val con = _db.readableDatabase
+        val cursor = con.rawQuery("SELECT SegmentTypeId FROM MatchSegments WHERE MatchID = ? ORDER BY StartTime DESC LIMIT 1", arrayOf(matchId.toString()))
+
+        if(cursor.moveToNext()){
+            type = MatchSegmentType.fromInt(cursor.getInt(0) + 1)
+            name = getSegmentName(type)
+        }
+
+        cursor.close()
+        con.close()
+
+        return Pair(type, name)
+    }
+
     private fun loadMatchSegment(id: Int, con: SQLiteDatabase): MatchSegment{
         val cursor = con.rawQuery("SELECT ms.ID, ms.SegmentTypeId, ms.StartTime, s.Name, s.Code FROM MatchSegments ms INNER JOIN MatchSegmentTypes s ON s.ID = ms.SegmentTypeId WHERE ms.ID = ?", arrayOf(id.toString()))
         cursor.moveToNext()
@@ -140,10 +160,16 @@ class MatchSegmentRepository(db: Database) {
     private fun listStats(segmentId: Int, con: SQLiteDatabase, homeOrAway: Boolean): MutableMap<Int, Int>{
         val map = mutableMapOf<Int, Int>()
 
-        val cursor = con.rawQuery("SELECT st.ID, SUM(CASE WHEN ms.ID IS NOT NULL THEN 1 ELSE 0 END) Total FROM StatTypes st LEFT OUTER JOIN MatchStats ms ON ms.StatTypeId = st.ID AND ms.MatchSegmentId = ? AND HomeOrAway = ? GROUP BY st.ID", arrayOf(segmentId.toString(), homeOrAway.toString()))
+        Log.d("LOADING", "Loading stats for segment $segmentId (homeOrAway: $homeOrAway)")
+
+        val cursor = con.rawQuery("SELECT st.ID, SUM(CASE WHEN ms.ID IS NOT NULL THEN 1 ELSE 0 END) Total FROM StatTypes st LEFT OUTER JOIN MatchStats ms ON ms.StatTypeId = st.ID AND ms.MatchSegmentId = ? AND HomeOrAway = ? GROUP BY st.ID", arrayOf(segmentId.toString(), if(homeOrAway) "1" else "0"))
 
         while(cursor.moveToNext()){
-            map[cursor.getInt(cursor.getColumnIndexOrThrow("ID"))] = cursor.getInt(cursor.getColumnIndexOrThrow("Total"))
+            val id = cursor.getInt(cursor.getColumnIndexOrThrow("ID"))
+            val total = cursor.getInt(cursor.getColumnIndexOrThrow("Total"))
+            map[id] = total
+
+            Log.d("LOADING", "Found total of $total for stat $id")
         }
 
         cursor.close()

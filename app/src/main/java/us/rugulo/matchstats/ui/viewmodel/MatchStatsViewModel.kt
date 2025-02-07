@@ -42,7 +42,9 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
             inProgress.value = true
         }
 
-
+        val nextSegment = segmentRepo.getNextSegment(id)
+        nextSegmentType.value = nextSegment.first
+        nextSegmentName.value = nextSegment.second
     }
 
     fun startSegment(){

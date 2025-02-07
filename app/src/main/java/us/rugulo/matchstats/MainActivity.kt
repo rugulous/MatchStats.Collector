@@ -39,7 +39,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        vm.setMatchId(1)
+        val matchId = intent.extras?.getInt("ID") ?: throw Error("No match ID specified!")
+        vm.setMatchId(matchId)
 
         setContent {
             FootballStatsApp()
