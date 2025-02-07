@@ -7,6 +7,6 @@ enum class MatchSegmentType(val value: Int) {
     ET_SECOND_HALF(4);
 
     companion object {
-        fun fromInt(value: Int) = MatchSegmentType.values().first {it.value == value}
+        fun fromInt(value: Int) = MatchSegmentType.entries.first {it.value == value}
     }
 }

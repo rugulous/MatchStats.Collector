@@ -1,11 +1,9 @@
 package us.rugulo.matchstats.ui.viewmodel
 
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
-import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +31,25 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
         startTimer()
     }
 
-    fun updateStatCount(isHome: Boolean, statTypeId: Int, changeBy: Int) {
+    fun incrementStat(isHome: Boolean, statTypeId: Int){
+        val segment = currentSegment.value ?: return
+
+        segmentRepo.recordStat(segment.id, isHome, statTypeId)
+        updateUiStatCount(isHome, statTypeId, 1)
+    }
+
+    fun decrementStat(isHome: Boolean, statTypeId: Int){
+        val segment = currentSegment.value ?: return
+
+        val change = segmentRepo.removeStat(segment.id, isHome, statTypeId)
+        updateUiStatCount(isHome, statTypeId, -change)
+    }
+
+    private fun updateUiStatCount(isHome: Boolean, statTypeId: Int, changeBy: Int) {
+        if(changeBy == 0){
+            return
+        }
+
         val segment = currentSegment.value ?: return
 
         val updatedHomeStats = segment.homeStats.toMutableMap()

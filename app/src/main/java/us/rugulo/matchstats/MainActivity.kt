@@ -49,18 +49,8 @@ class MainActivity : ComponentActivity() {
         _db = Database(this)
 
         val db = _db.readableDatabase
-        val cursor = db.query("Matches", null, null, null, null, null, null)
-
-        with(cursor) {
-            while(moveToNext()){
-                val id = getInt(0)
-                Log.d("TEST", id.toString())
-            }
-        }
-
-        cursor.close()
-
         vm.statTypes = getStatTypes(db)
+        db.close()
 
         setContent {
             FootballStatsApp()
@@ -196,8 +186,8 @@ fun StatsScreen(isHome: Boolean, modifier: Modifier = Modifier, vm: MatchStatsVi
                 CounterButton(
                     label = vm.statTypes[id] ?: "Unknown", // Handle unknown stat type
                     count = count,
-                    onIncrement = { vm.updateStatCount(isHome, id, 1) },
-                    onDecrement = { vm.updateStatCount(isHome, id, -1) }
+                    onIncrement = { vm.incrementStat(isHome, id) },
+                    onDecrement = { vm.decrementStat(isHome, id) }
                 )
             }
         }

@@ -2,6 +2,7 @@ package us.rugulo.matchstats.data.repository
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
+import android.util.Log
 import us.rugulo.matchstats.data.Database
 import us.rugulo.matchstats.data.MatchSegmentType
 import us.rugulo.matchstats.models.MatchSegment
@@ -23,12 +24,40 @@ class MatchSegmentRepository(db: Database) {
         return record
     }
 
+    fun recordStat(segmentId: Int, homeOrAway: Boolean, statTypeId: Int){
+        val content = ContentValues()
+        content.put("MatchSegmentId", segmentId)
+        content.put("HomeOrAway", homeOrAway)
+        content.put("StatTypeId", statTypeId)
+        content.put("Timestamp", System.currentTimeMillis())
+
+        val con = _db.writableDatabase
+        con.insert("MatchStats", null, content)
+        con.close()
+    }
+
+    fun removeStat(segmentId: Int, homeOrAway: Boolean, statTypeId: Int): Int{
+        val con = _db.writableDatabase
+
+        val statement = con.compileStatement("DELETE FROM MatchStats WHERE ID = (SELECT ID FROM MatchStats WHERE MatchSegmentId = ? AND HomeOrAway = ? AND StatTypeId = ? ORDER BY Timestamp DESC LIMIT 1)")
+        statement.bindLong(1, segmentId.toLong())
+        statement.bindLong(2, if(homeOrAway) 1L else 0L)
+        statement.bindLong(3, statTypeId.toLong())
+
+        val affected = statement.executeUpdateDelete()
+
+        con.close()
+
+        return affected
+    }
+
     private fun loadMatchSegment(id: Int, con: SQLiteDatabase): MatchSegment{
         val cursor = con.rawQuery("SELECT ms.ID, ms.SegmentTypeId, ms.StartTime, s.Name, s.Code FROM MatchSegments ms INNER JOIN MatchSegmentTypes s ON s.ID = ms.SegmentTypeId WHERE ms.ID = ?", arrayOf(id.toString()))
         cursor.moveToNext()
 
         val segment = MatchSegment(
-             MatchSegmentType.fromInt(cursor.getInt(cursor.getColumnIndexOrThrow("SegmentTypeId"))),
+            cursor.getInt(cursor.getColumnIndexOrThrow("ID")),
+            MatchSegmentType.fromInt(cursor.getInt(cursor.getColumnIndexOrThrow("SegmentTypeId"))),
             cursor.getString(cursor.getColumnIndexOrThrow("Name")),
             cursor.getString(cursor.getColumnIndexOrThrow("Code")),
             listStats(id, con, true),
