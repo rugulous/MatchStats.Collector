@@ -18,6 +18,7 @@ import us.rugulo.matchstats.models.MatchSegment
 class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : ViewModel() {
     private var segmentRepo = matchSegmentRepository
     private var timerJob: Job? = null
+    private var matchId: Int? = null
 
     var inProgress = mutableStateOf(false)
     var currentSegment = mutableStateOf<MatchSegment?>(null)
@@ -28,9 +29,29 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
     private var nextSegmentType = mutableStateOf(MatchSegmentType.FIRST_HALF)
     var nextSegmentName = mutableStateOf("Match")
 
+    init {
+        statTypes = matchSegmentRepository.getStatTypes()
+    }
+
+    fun setMatchId(id: Int){
+        this.matchId = id
+        currentSegment.value = segmentRepo.getIncompleteMatchSegment(id)
+
+        currentSegment.value?.let {
+            startTimer()
+            inProgress.value = true
+        }
+
+
+    }
+
     fun startSegment(){
+        if(matchId == null){
+            throw Error("You must pass the match ID before attempting to do anything!")
+        }
+
         this.inProgress.value = true
-        this.currentSegment.value = segmentRepo.initialiseSegment(1, nextSegmentType.value)
+        this.currentSegment.value = segmentRepo.initialiseSegment(matchId!!, nextSegmentType.value)
         startTimer()
     }
 
@@ -82,9 +103,6 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
     }
 
     private fun startTimer(){
-        elapsedSeconds.value = "00"
-        elapsedMinutes.value = "00"
-
         timerJob = CoroutineScope(Dispatchers.Default).launch {
             while(inProgress.value){
                 val segment = currentSegment.value ?: continue

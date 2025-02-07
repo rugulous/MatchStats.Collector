@@ -1,6 +1,7 @@
 package us.rugulo.matchstats
 
 import android.app.Application
+import android.content.Intent
 import us.rugulo.matchstats.data.Database
 import us.rugulo.matchstats.data.repository.MatchSegmentRepository
 
@@ -12,7 +13,7 @@ class MatchStatsApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        this.deleteDatabase(Database.DATABASE_NAME)
+        //this.deleteDatabase(Database.DATABASE_NAME)
         database = Database(this)
         matchSegmentRepository = MatchSegmentRepository(database)
     }

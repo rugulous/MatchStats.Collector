@@ -1,8 +1,6 @@
 package us.rugulo.matchstats
 
-import android.database.sqlite.SQLiteDatabase
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -32,46 +30,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-import us.rugulo.matchstats.data.Database
 import us.rugulo.matchstats.ui.viewmodel.MatchStatsViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
-import us.rugulo.matchstats.data.MatchSegmentType
 
 class MainActivity : ComponentActivity() {
-    private lateinit var _db: Database
-
     private val vm: MatchStatsViewModel by viewModels { MatchStatsViewModel.Factory }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        this.deleteDatabase(Database.DATABASE_NAME)
-        _db = Database(this)
-
-        val db = _db.readableDatabase
-        vm.statTypes = getStatTypes(db)
-        db.close()
+        vm.setMatchId(1)
 
         setContent {
             FootballStatsApp()
         }
     }
-}
-
-private fun getStatTypes(db: SQLiteDatabase): Map<Int, String> {
-    val statsMap = mutableMapOf<Int, String>()
-
-    val cursor = db.query("StatTypes", null, null, null, null, null, null)
-    cursor.use {
-        while(cursor.moveToNext()){
-            val id = cursor.getInt(cursor.getColumnIndexOrThrow("ID"))
-            val name = cursor.getString(cursor.getColumnIndexOrThrow("Description"))
-            statsMap[id] = name
-            Log.d("DATABASE", "$id = $name")
-        }
-    }
-
-    return statsMap
 }
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)

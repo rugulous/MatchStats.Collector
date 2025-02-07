@@ -69,6 +69,55 @@ class MatchSegmentRepository(db: Database) {
         return affected
     }
 
+    fun checkForIncompleteMatch(): Int?{
+        var matchId: Int? = null
+
+        val con = _db.readableDatabase
+        val cursor = con.rawQuery("SELECT m.ID FROM Matches m INNER JOIN MatchSegments ms ON ms.MatchId = m.ID WHERE ms.EndTime IS NULL", null)
+
+        if(cursor.moveToNext()){
+            matchId = cursor.getInt(0)
+        }
+
+        cursor.close()
+        con.close()
+
+        return matchId
+    }
+
+    //todo: move this somewhere better
+    fun getStatTypes(): Map<Int, String> {
+        val con = _db.readableDatabase
+        val statsMap = mutableMapOf<Int, String>()
+
+        val cursor = con.query("StatTypes", null, null, null, null, null, null)
+        cursor.use {
+            while(cursor.moveToNext()){
+                val id = cursor.getInt(cursor.getColumnIndexOrThrow("ID"))
+                val name = cursor.getString(cursor.getColumnIndexOrThrow("Description"))
+                statsMap[id] = name
+            }
+        }
+
+        return statsMap
+    }
+
+    fun getIncompleteMatchSegment(matchId: Int): MatchSegment?{
+        var segment: MatchSegment? = null
+
+        val con = _db.readableDatabase
+        val cursor = con.rawQuery("SELECT ID FROM MatchSegments WHERE EndTime IS NULL AND MatchID = ?", arrayOf(matchId.toString()))
+
+        if(cursor.moveToNext()){
+            val id = cursor.getInt(0)
+            segment = loadMatchSegment(id, con)
+        }
+
+        cursor.close()
+        con.close()
+        return segment
+    }
+
     private fun loadMatchSegment(id: Int, con: SQLiteDatabase): MatchSegment{
         val cursor = con.rawQuery("SELECT ms.ID, ms.SegmentTypeId, ms.StartTime, s.Name, s.Code FROM MatchSegments ms INNER JOIN MatchSegmentTypes s ON s.ID = ms.SegmentTypeId WHERE ms.ID = ?", arrayOf(id.toString()))
         cursor.moveToNext()
