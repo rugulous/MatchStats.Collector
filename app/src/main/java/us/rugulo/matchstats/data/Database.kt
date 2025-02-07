@@ -15,8 +15,8 @@ class Database(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
         db.execSQL("CREATE TABLE Matches (ID INTEGER PRIMARY KEY AUTOINCREMENT, HomeTeam TEXT NOT NULL, AwayTeam TEXT NOT NULL, Notes TEXT)")
         db.execSQL("INSERT INTO Matches (HomeTeam, AwayTeam, Notes) VALUES ('Glossop', 'Totty United', 'Development Division Cup')")
 
-        db.execSQL("CREATE TABlE MatchSegment (ID INTEGER PRIMARY KEY AUTOINCREMENT, MatchId INTEGER NOT NULL, SegmentTypeId INTEGER NOT NULL, StartTime INTEGER NOT NULL, EndTime INTEGER NOT NULL)")
-        db.execSQL("CREATE TABLE MatchStat (ID INTEGER PRIMARY KEY AUTOINCREMENT, MatchSegmentId INTEGER NOT NULL, HomeOrAway INTEGER NOT NULL, StatTypeId INTEGER NOT NULL, Timestamp INTEGER NOT NULL)")
+        db.execSQL("CREATE TABlE MatchSegments (ID INTEGER PRIMARY KEY AUTOINCREMENT, MatchId INTEGER NOT NULL, SegmentTypeId INTEGER NOT NULL, StartTime INTEGER NOT NULL, EndTime INTEGER)")
+        db.execSQL("CREATE TABLE MatchStats (ID INTEGER PRIMARY KEY AUTOINCREMENT, MatchSegmentId INTEGER NOT NULL, HomeOrAway INTEGER NOT NULL, StatTypeId INTEGER NOT NULL, Timestamp INTEGER NOT NULL)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {

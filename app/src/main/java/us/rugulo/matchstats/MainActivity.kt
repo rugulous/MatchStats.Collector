@@ -35,9 +35,12 @@ import kotlinx.coroutines.launch
 import us.rugulo.matchstats.data.Database
 import us.rugulo.matchstats.ui.viewmodel.MatchStatsViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import us.rugulo.matchstats.data.MatchSegmentType
 
 class MainActivity : ComponentActivity() {
     private lateinit var _db: Database
+
+    private val vm: MatchStatsViewModel by viewModels { MatchStatsViewModel.Factory }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,11 +60,10 @@ class MainActivity : ComponentActivity() {
 
         cursor.close()
 
-        val viewModel: MatchStatsViewModel by viewModels()
-        viewModel.statTypes = getStatTypes(db)
+        vm.statTypes = getStatTypes(db)
 
         setContent {
-            FootballStatsApp(viewModel = viewModel)
+            FootballStatsApp()
         }
     }
 }
@@ -84,7 +86,7 @@ private fun getStatTypes(db: SQLiteDatabase): Map<Int, String> {
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun FootballStatsApp(viewModel: MatchStatsViewModel) {
+fun FootballStatsApp(viewModel: MatchStatsViewModel = viewModel()) {
     val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
 
@@ -110,12 +112,22 @@ fun FootballStatsApp(viewModel: MatchStatsViewModel) {
                     )
 
                     if (viewModel.inProgress.value) {
-                        Text(
-                            text = "00:00",
-                            fontSize = 22.sp
-                        )
+                        Row (
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            Text(
+                                text = viewModel.currentSegment.value!!.code,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "${viewModel.elapsedMinutes.value}:${viewModel.elapsedSeconds.value}",
+                                fontSize = 22.sp
+                            )
+                        }
                     } else {
-                        Button(onClick = {viewModel.startMatch()}) {
+                        Button(onClick = {viewModel.startSegment(MatchSegmentType.FIRST_HALF)}) {
                             Text(
                                 text = "Start First Half",
                                 fontSize = 20.sp
@@ -156,7 +168,7 @@ fun FootballStatsApp(viewModel: MatchStatsViewModel) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TabContent(pagerState: PagerState, modifier: Modifier = Modifier, vm: MatchStatsViewModel = viewModel()){
+fun TabContent(pagerState: PagerState, modifier: Modifier = Modifier){
     HorizontalPager(state = pagerState) { index ->
             StatsScreen(
                 modifier = modifier,
@@ -218,5 +230,5 @@ fun CounterButton(label: String, count: Int, onIncrement: () -> Unit, onDecremen
 @Preview
 @Composable
 fun Preview(){
-    FootballStatsApp(MatchStatsViewModel())
+    FootballStatsApp()
 }

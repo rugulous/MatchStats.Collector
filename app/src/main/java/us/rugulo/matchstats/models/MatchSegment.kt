@@ -7,5 +7,6 @@ data class MatchSegment (
     val name: String,
     val code: String,
     var homeStats: MutableMap<Int, Int>,
-    var awayStats: MutableMap<Int, Int>
+    var awayStats: MutableMap<Int, Int>,
+    val startTime: Long
 )
