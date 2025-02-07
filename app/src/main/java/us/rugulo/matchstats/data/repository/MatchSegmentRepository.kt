@@ -2,7 +2,6 @@ package us.rugulo.matchstats.data.repository
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
-import android.util.Log
 import us.rugulo.matchstats.data.Database
 import us.rugulo.matchstats.data.MatchSegmentType
 import us.rugulo.matchstats.models.MatchSegment
@@ -22,6 +21,25 @@ class MatchSegmentRepository(db: Database) {
         con.close()
 
         return record
+    }
+
+    fun finaliseSegment(matchSegmentId: Int){
+        val con = _db.writableDatabase
+        con.execSQL("UPDATE MatchSegments SET EndTime = ? WHERE ID = ?", arrayOf(System.currentTimeMillis(), matchSegmentId))
+        con.close()
+    }
+
+    fun getSegmentName(segmentType: MatchSegmentType): String{
+        val con = _db.readableDatabase
+        val cursor = con.query("MatchSegmentTypes", arrayOf("Name"), "ID = ?", arrayOf(segmentType.value.toString()), null, null, null)
+
+        cursor.moveToNext()
+        val name = cursor.getString(0)
+
+        cursor.close()
+        con.close()
+
+        return name
     }
 
     fun recordStat(segmentId: Int, homeOrAway: Boolean, statTypeId: Int){

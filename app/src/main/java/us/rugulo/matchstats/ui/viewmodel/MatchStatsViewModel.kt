@@ -25,10 +25,26 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
     var elapsedMinutes = mutableStateOf("")
     var elapsedSeconds = mutableStateOf("")
 
-    fun startSegment(type: MatchSegmentType){
+    private var nextSegmentType = mutableStateOf(MatchSegmentType.FIRST_HALF)
+    var nextSegmentName = mutableStateOf("Match")
+
+    fun startSegment(){
         this.inProgress.value = true
-        this.currentSegment.value = segmentRepo.initialiseSegment(1, type)
+        this.currentSegment.value = segmentRepo.initialiseSegment(1, nextSegmentType.value)
         startTimer()
+    }
+
+    fun closeSegment(){
+        timerJob?.cancel()
+
+        currentSegment.value?.let {
+            segmentRepo.finaliseSegment(it.id)
+            nextSegmentType.value = MatchSegmentType.fromInt(it.type.value + 1)
+            nextSegmentName.value = segmentRepo.getSegmentName(nextSegmentType.value)
+        }
+
+        currentSegment.value = null
+        inProgress.value = false
     }
 
     fun incrementStat(isHome: Boolean, statTypeId: Int){

@@ -102,12 +102,14 @@ fun FootballStatsApp(viewModel: MatchStatsViewModel = viewModel()) {
                     )
 
                     if (viewModel.inProgress.value) {
+                        val segment = viewModel.currentSegment.value!!
+
                         Row (
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
                             Text(
-                                text = viewModel.currentSegment.value!!.code,
+                                text = segment.code,
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -116,10 +118,17 @@ fun FootballStatsApp(viewModel: MatchStatsViewModel = viewModel()) {
                                 fontSize = 22.sp
                             )
                         }
-                    } else {
-                        Button(onClick = {viewModel.startSegment(MatchSegmentType.FIRST_HALF)}) {
+
+                        Button(onClick = {viewModel.closeSegment()}) {
                             Text(
-                                text = "Start First Half",
+                                text = "End ${segment.name}"
+                            )
+                        }
+
+                    } else {
+                        Button(onClick = {viewModel.startSegment()}) {
+                            Text(
+                                text = "Start ${viewModel.nextSegmentName.value}",
                                 fontSize = 20.sp
                             )
                         }
@@ -128,30 +137,32 @@ fun FootballStatsApp(viewModel: MatchStatsViewModel = viewModel()) {
 
             }
 
-            //tabs for actual stat recording
-            TabRow(selectedTabIndex = pagerState.currentPage) {
-                Tab(
-                    selected = pagerState.currentPage == 0,
-                    onClick = {
-                        scope.launch {
-                            pagerState.animateScrollToPage(0)
-                        }
-                    },
-                    modifier = Modifier.padding(12.dp)
-                ) {
-                    Text("Home")
+            if(viewModel.inProgress.value) {
+                //tabs for actual stat recording
+                TabRow(selectedTabIndex = pagerState.currentPage) {
+                    Tab(
+                        selected = pagerState.currentPage == 0,
+                        onClick = {
+                            scope.launch {
+                                pagerState.animateScrollToPage(0)
+                            }
+                        },
+                        modifier = Modifier.padding(12.dp)
+                    ) {
+                        Text("Home")
+                    }
+                    Tab(
+                        pagerState.currentPage == 1, {
+                            scope.launch {
+                                pagerState.animateScrollToPage(1)
+                            }
+                        }, Modifier.padding(12.dp)
+                    ) {
+                        Text("Away")
+                    }
                 }
-                Tab(
-                    pagerState.currentPage == 1, {
-                        scope.launch {
-                            pagerState.animateScrollToPage(1)
-                        }
-                    }, Modifier.padding(12.dp)
-                ) {
-                    Text("Away")
-                }
+                TabContent(pagerState)
             }
-            TabContent(pagerState)
         }
     }
 }
