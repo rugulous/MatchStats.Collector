@@ -74,8 +74,8 @@ class MatchSegmentRepository(db: Database) {
         var matchId: Int? = null
 
         val con = _db.readableDatabase
-        //search for segments without an end, or for matches with an odd number of segments (1H without 2H, 1H/2H/1ET without 2ET)
-        val cursor = con.rawQuery("SELECT MatchId FROM MatchSegments GROUP BY MatchId HAVING COUNT(*) % 2 = 1 OR SUM(CASE WHEN EndTime IS NULL THEN 1 ELSE 0 END) > 0;", null)
+        //search for segments without an end, or for matches with an odd number of segments (1H without 2H, 1H/2H/1ET without 2ET), or 0 segments (not started)
+        val cursor = con.rawQuery("SELECT MatchId FROM MatchSegments GROUP BY MatchId HAVING COUNT(*) % 2 = 1 OR COUNT(*) = 0 OR SUM(CASE WHEN EndTime IS NULL THEN 1 ELSE 0 END) > 0;", null)
 
         if(cursor.moveToNext()){
             matchId = cursor.getInt(0)
@@ -136,6 +136,19 @@ class MatchSegmentRepository(db: Database) {
         con.close()
 
         return Pair(type, name)
+    }
+
+    fun createMatch(home: String, away: String, notes: String): Int{
+        val values = ContentValues()
+        values.put("HomeTeam", home)
+        values.put("AwayTeam", away)
+        values.put("Notes", notes)
+
+        val con = _db.writableDatabase
+        val id = con.insert("Matches", null, values)
+        con.close()
+
+        return id.toInt()
     }
 
     private fun loadMatchSegment(id: Int, con: SQLiteDatabase): MatchSegment{

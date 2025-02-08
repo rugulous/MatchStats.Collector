@@ -29,6 +29,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import us.rugulo.matchstats.ui.viewmodel.MatchStatsViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -44,6 +47,16 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             FootballStatsApp()
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED){
+                vm.navigateToNextScreen.collect { v ->
+                    if(v){
+                        finish()
+                    }
+                }
+            }
         }
     }
 }

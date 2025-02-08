@@ -9,6 +9,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import us.rugulo.matchstats.MatchStatsApp
 import us.rugulo.matchstats.data.MatchSegmentType
@@ -19,19 +21,18 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
     private var segmentRepo = matchSegmentRepository
     private var timerJob: Job? = null
     private var matchId: Int? = null
+    private val isMatchFinished = MutableStateFlow(false)
 
-    var inProgress = mutableStateOf(false)
-    var currentSegment = mutableStateOf<MatchSegment?>(null)
-    var statTypes = mapOf<Int, String>()
-    var elapsedMinutes = mutableStateOf("")
-    var elapsedSeconds = mutableStateOf("")
+    val navigateToNextScreen: SharedFlow<Boolean> = isMatchFinished
 
-    private var nextSegmentType = mutableStateOf(MatchSegmentType.FIRST_HALF)
-    var nextSegmentName = mutableStateOf("Match")
+    val inProgress = mutableStateOf(false)
+    val currentSegment = mutableStateOf<MatchSegment?>(null)
+    val statTypes: Map<Int, String> = matchSegmentRepository.getStatTypes()
+    val elapsedMinutes = mutableStateOf("")
+    val elapsedSeconds = mutableStateOf("")
 
-    init {
-        statTypes = matchSegmentRepository.getStatTypes()
-    }
+    private val nextSegmentType = mutableStateOf(MatchSegmentType.FIRST_HALF)
+    val nextSegmentName = mutableStateOf("Match")
 
     fun setMatchId(id: Int){
         this.matchId = id
@@ -62,8 +63,13 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
 
         currentSegment.value?.let {
             segmentRepo.finaliseSegment(it.id)
-            nextSegmentType.value = MatchSegmentType.fromInt(it.type.value + 1)
-            nextSegmentName.value = segmentRepo.getSegmentName(nextSegmentType.value)
+
+            if(it.type == MatchSegmentType.ET_SECOND_HALF){
+                isMatchFinished.value = true
+            } else {
+                nextSegmentType.value = MatchSegmentType.fromInt(it.type.value + 1)
+                nextSegmentName.value = segmentRepo.getSegmentName(nextSegmentType.value)
+            }
         }
 
         currentSegment.value = null

@@ -9,11 +9,16 @@ class StartupActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         val matchInProgress = (applicationContext as MatchStatsApp).matchSegmentRepository.checkForIncompleteMatch()
+        val intent: Intent
+
         if(matchInProgress != null){
-            val resumeIntent = Intent(this, MainActivity::class.java)
-            resumeIntent.putExtra("ID", matchInProgress)
-            startActivity(resumeIntent)
+            intent = Intent(this, MainActivity::class.java)
+            intent.putExtra("ID", matchInProgress)
+        } else {
+            intent = Intent(this, CreateMatchActivity::class.java)
         }
+
+        startActivity(intent)
 
         finish()
     }
