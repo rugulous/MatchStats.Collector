@@ -15,7 +15,7 @@ class StartupActivity : Activity() {
             intent = Intent(this, MainActivity::class.java)
             intent.putExtra("ID", matchInProgress)
         } else {
-            intent = Intent(this, CreateMatchActivity::class.java)
+            intent = Intent(this, ListMatchesActivity::class.java)
         }
 
         startActivity(intent)

@@ -30,12 +30,20 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
     val statTypes: Map<Int, String> = matchSegmentRepository.getStatTypes()
     val elapsedMinutes = mutableStateOf("")
     val elapsedSeconds = mutableStateOf("")
+    var homeTeam = ""
+    var awayTeam = ""
+    var notes = ""
 
-    private val nextSegmentType = mutableStateOf(MatchSegmentType.FIRST_HALF)
+    val nextSegmentType = mutableStateOf(MatchSegmentType.FIRST_HALF)
     val nextSegmentName = mutableStateOf("Match")
 
     fun setMatchId(id: Int){
         this.matchId = id
+        val details = segmentRepo.getMatchDetails(id)
+        homeTeam = details.first
+        awayTeam = details.second
+        notes = details.third
+
         currentSegment.value = segmentRepo.getIncompleteMatchSegment(id)
 
         currentSegment.value?.let {
@@ -65,7 +73,7 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
             segmentRepo.finaliseSegment(it.id)
 
             if(it.type == MatchSegmentType.ET_SECOND_HALF){
-                isMatchFinished.value = true
+                endMatch()
             } else {
                 nextSegmentType.value = MatchSegmentType.fromInt(it.type.value + 1)
                 nextSegmentName.value = segmentRepo.getSegmentName(nextSegmentType.value)
@@ -88,6 +96,10 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
 
         val change = segmentRepo.removeStat(segment.id, isHome, statTypeId)
         updateUiStatCount(isHome, statTypeId, -change)
+    }
+
+    fun endMatch(){
+        isMatchFinished.value = true
     }
 
     private fun updateUiStatCount(isHome: Boolean, statTypeId: Int, changeBy: Int) {

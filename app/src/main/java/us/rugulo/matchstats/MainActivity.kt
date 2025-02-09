@@ -1,5 +1,6 @@
 package us.rugulo.matchstats
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,6 +27,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,6 +37,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import us.rugulo.matchstats.ui.viewmodel.MatchStatsViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import us.rugulo.matchstats.data.MatchSegmentType
 
 class MainActivity : ComponentActivity() {
     private val vm: MatchStatsViewModel by viewModels { MatchStatsViewModel.Factory }
@@ -53,6 +56,9 @@ class MainActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED){
                 vm.navigateToNextScreen.collect { v ->
                     if(v){
+                        val intent = Intent(this@MainActivity, ReviewActivity::class.java)
+                        intent.putExtra("ID", matchId)
+                        startActivity(intent)
                         finish()
                     }
                 }
@@ -82,10 +88,11 @@ fun FootballStatsApp(viewModel: MatchStatsViewModel = viewModel()) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ){
                     Text(
-                        "Totty United vs Glossop\nDevelopment Division Cup",
+                        "${viewModel.homeTeam} vs ${viewModel.awayTeam}\n${viewModel.notes}",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(0.dp, 5.dp)
+                        modifier = Modifier.padding(0.dp, 5.dp),
+                        textAlign = TextAlign.Center
                     )
 
                     if (viewModel.inProgress.value) {
@@ -113,6 +120,15 @@ fun FootballStatsApp(viewModel: MatchStatsViewModel = viewModel()) {
                         }
 
                     } else {
+                        if(viewModel.nextSegmentType.value == MatchSegmentType.ET_FIRST_HALF){
+                            Button(onClick = {viewModel.endMatch()}) {
+                                Text(
+                                    text = "End Match",
+                                    fontSize = 20.sp
+                                )
+                            }
+                        }
+
                         Button(onClick = {viewModel.startSegment()}) {
                             Text(
                                 text = "Start ${viewModel.nextSegmentName.value}",

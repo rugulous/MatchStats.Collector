@@ -5,6 +5,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import us.rugulo.matchstats.data.Database
 import us.rugulo.matchstats.data.MatchSegmentType
+import us.rugulo.matchstats.models.Match
 import us.rugulo.matchstats.models.MatchSegment
 
 class MatchSegmentRepository(db: Database) {
@@ -149,6 +150,62 @@ class MatchSegmentRepository(db: Database) {
         con.close()
 
         return id.toInt()
+    }
+
+    //todo: move this somewhere better (and add typings)
+    fun getMatchDetails(id: Int): Triple<String, String, String>{
+        val con = _db.readableDatabase
+        val cursor = con.query("Matches", arrayOf("HomeTeam", "AwayTeam", "Notes"), "ID = ?", arrayOf(id.toString()), null, null, null)
+        cursor.moveToNext()
+        val result = Triple(
+            cursor.getString(cursor.getColumnIndexOrThrow("HomeTeam")),
+            cursor.getString(cursor.getColumnIndexOrThrow("AwayTeam")),
+            cursor.getString(cursor.getColumnIndexOrThrow("Notes"))
+        )
+        cursor.close()
+        con.close()
+        return result
+    }
+
+    fun getAllSegmentsForMatch(matchId: Int): List<MatchSegment>{
+        val list = mutableListOf<MatchSegment>()
+
+        val con = _db.readableDatabase
+        val cursor = con.query("MatchSegments", arrayOf("ID"), "MatchID = ?", arrayOf(matchId.toString()), null, null, null)
+
+        while(cursor.moveToNext()){
+            val id = cursor.getInt(0)
+            list.add(loadMatchSegment(id, con))
+            Log.d("LOAD", "Loaded segment $id")
+        }
+
+        cursor.close()
+        con.close()
+
+        return list
+    }
+
+    fun listMatches(): List<Match>{
+        val list = mutableListOf<Match>()
+
+        val con = _db.readableDatabase
+        val cursor = con.rawQuery("SELECT ID, HomeTeam, AwayTeam, Notes, ms.StartTime FROM Matches m LEFT OUTER JOIN (SELECT MatchID, MIN(StartTime) StartTime FROM MatchSegments ms GROUP BY MatchID) ms ON ms.MatchID = m.ID ORDER BY ms.StartTime DESC", arrayOf())
+
+
+        while(cursor.moveToNext()){
+            list.add(Match(
+                cursor.getInt(cursor.getColumnIndexOrThrow("ID")),
+                cursor.getString(cursor.getColumnIndexOrThrow("HomeTeam")),
+                cursor.getString(cursor.getColumnIndexOrThrow("AwayTeam")),
+                cursor.getString(cursor.getColumnIndexOrThrow("Notes")),
+                cursor.getInt(cursor.getColumnIndexOrThrow("StartTime"))
+            ))
+        }
+
+        cursor.close()
+        con.close()
+
+        return list
     }
 
     private fun loadMatchSegment(id: Int, con: SQLiteDatabase): MatchSegment{

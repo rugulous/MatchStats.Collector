@@ -17,6 +17,12 @@
             android:name=".CreateMatchActivity"
             android:exported="false" />
         <activity
+            android:name=".ReviewActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ListMatchesActivity"
+            android:exported="false" />
+        <activity
             android:name=".StartupActivity"
             android:exported="true"
             android:theme="@style/Theme.MatchStats">
