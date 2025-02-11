@@ -1,5 +1,6 @@
 package us.rugulo.matchstats.ui.viewmodel
 
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -25,6 +26,8 @@ class ReviewViewModel(matchSegmentRepo: MatchSegmentRepository) : ViewModel() {
     var homeTeam = ""
     var awayTeam = ""
     var notes = ""
+    val homeGoals = mutableIntStateOf(0)
+    val awayGoals = mutableIntStateOf(0)
 
     fun setMatchId(id: Int) {
         matchId = id
@@ -33,9 +36,11 @@ class ReviewViewModel(matchSegmentRepo: MatchSegmentRepository) : ViewModel() {
             _segments.value = segmentRepo.getAllSegmentsForMatch(id)
 
             val details = segmentRepo.getMatchDetails(id)
-            homeTeam = details.first
-            awayTeam = details.second
-            notes = details.third
+            homeTeam = details.homeTeam
+            awayTeam = details.awayTeam
+            notes = details.notes
+            homeGoals.intValue = details.homeGoals
+            awayGoals.intValue = details.awayGoals
         }
     }
 

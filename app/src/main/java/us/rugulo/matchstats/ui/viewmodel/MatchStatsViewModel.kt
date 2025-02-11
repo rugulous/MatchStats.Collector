@@ -1,5 +1,6 @@
 package us.rugulo.matchstats.ui.viewmodel
 
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import us.rugulo.matchstats.MatchStatsApp
 import us.rugulo.matchstats.data.MatchSegmentType
+import us.rugulo.matchstats.data.ShotOutcome
 import us.rugulo.matchstats.data.StatType
 import us.rugulo.matchstats.data.repository.MatchSegmentRepository
 import us.rugulo.matchstats.models.MatchSegment
@@ -37,6 +39,8 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
     var homeTeam = ""
     var awayTeam = ""
     var notes = ""
+    val homeGoals = mutableIntStateOf(0)
+    val awayGoals = mutableIntStateOf(0)
 
     val pendingStat = mutableStateOf<PendingStat?>(null)
     val outcomes = mutableListOf<StatOutcome>()
@@ -47,9 +51,11 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
     fun setMatchId(id: Int){
         this.matchId = id
         val details = segmentRepo.getMatchDetails(id)
-        homeTeam = details.first
-        awayTeam = details.second
-        notes = details.third
+        homeTeam = details.homeTeam
+        awayTeam = details.awayTeam
+        notes = details.notes
+        homeGoals.intValue = details.homeGoals
+        awayGoals.intValue = details.awayGoals
 
         currentSegment.value = segmentRepo.getIncompleteMatchSegment(id)
 
@@ -132,6 +138,14 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
         }
 
         currentSegment.value = segment.copy(homeStats = modifiedHomeStats, awayStats = modifiedAwayStats)
+
+        if(outcome.id == ShotOutcome.GOAL.value){
+            if(pending.homeOrAway){
+                homeGoals.intValue += 1
+            } else {
+                awayGoals.intValue += 1
+            }
+        }
 
         if(outcome.nextAction != null){
             openModalForAction(outcome.nextAction, pending.homeOrAway, statId)

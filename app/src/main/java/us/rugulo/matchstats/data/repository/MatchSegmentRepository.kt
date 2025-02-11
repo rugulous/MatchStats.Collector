@@ -2,7 +2,6 @@ package us.rugulo.matchstats.data.repository
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
-import android.util.Log
 import us.rugulo.matchstats.data.Database
 import us.rugulo.matchstats.data.MatchSegmentType
 import us.rugulo.matchstats.data.StatType
@@ -146,14 +145,19 @@ class MatchSegmentRepository(db: Database) {
     }
 
     //todo: move this somewhere better (and add typings)
-    fun getMatchDetails(id: Int): Triple<String, String, String>{
+    fun getMatchDetails(id: Int): Match{
         val con = _db.readableDatabase
-        val cursor = con.query("Matches", arrayOf("HomeTeam", "AwayTeam", "Notes"), "ID = ?", arrayOf(id.toString()), null, null, null)
+        val cursor = con.rawQuery("SELECT ID, HomeTeam, AwayTeam, Notes, ms.StartTime, (SELECT COUNT(*) FROM MatchStats ms INNER JOIN MatchSegments s ON s.ID = ms.MatchSegmentId WHERE StatTypeId = 2 AND OutcomeId = 9 AND HomeOrAway = 1 AND s.MatchId = m.ID) HomeGoals, (SELECT COUNT(*) FROM MatchStats ms INNER JOIN MatchSegments s ON s.ID = ms.MatchSegmentId WHERE StatTypeId = 2 AND OutcomeId = 9 AND HomeOrAway = 0 AND s.MatchId = m.ID) AwayGoals FROM Matches m LEFT OUTER JOIN (SELECT MatchID, MIN(StartTime) StartTime FROM MatchSegments ms GROUP BY MatchID) ms ON ms.MatchID = m.ID WHERE ID = ?", arrayOf(id.toString()))
+
         cursor.moveToNext()
-        val result = Triple(
+        val result = Match(
+            cursor.getInt(cursor.getColumnIndexOrThrow("ID")),
             cursor.getString(cursor.getColumnIndexOrThrow("HomeTeam")),
             cursor.getString(cursor.getColumnIndexOrThrow("AwayTeam")),
-            cursor.getString(cursor.getColumnIndexOrThrow("Notes"))
+            cursor.getString(cursor.getColumnIndexOrThrow("Notes")),
+            cursor.getInt(cursor.getColumnIndexOrThrow("StartTime")),
+            cursor.getInt(cursor.getColumnIndexOrThrow("HomeGoals")),
+            cursor.getInt(cursor.getColumnIndexOrThrow("AwayGoals"))
         )
         cursor.close()
         con.close()
@@ -181,7 +185,7 @@ class MatchSegmentRepository(db: Database) {
         val list = mutableListOf<Match>()
 
         val con = _db.readableDatabase
-        val cursor = con.rawQuery("SELECT ID, HomeTeam, AwayTeam, Notes, ms.StartTime FROM Matches m LEFT OUTER JOIN (SELECT MatchID, MIN(StartTime) StartTime FROM MatchSegments ms GROUP BY MatchID) ms ON ms.MatchID = m.ID ORDER BY ms.StartTime DESC", arrayOf())
+        val cursor = con.rawQuery("SELECT ID, HomeTeam, AwayTeam, Notes, ms.StartTime, (SELECT COUNT(*) FROM MatchStats ms INNER JOIN MatchSegments s ON s.ID = ms.MatchSegmentId WHERE StatTypeId = 2 AND OutcomeId = 9 AND HomeOrAway = 1 AND s.MatchId = m.ID) HomeGoals, (SELECT COUNT(*) FROM MatchStats ms INNER JOIN MatchSegments s ON s.ID = ms.MatchSegmentId WHERE StatTypeId = 2 AND OutcomeId = 9 AND HomeOrAway = 0 AND s.MatchId = m.ID) AwayGoals FROM Matches m LEFT OUTER JOIN (SELECT MatchID, MIN(StartTime) StartTime FROM MatchSegments ms GROUP BY MatchID) ms ON ms.MatchID = m.ID ORDER BY ms.StartTime DESC", arrayOf())
 
 
         while(cursor.moveToNext()){
@@ -190,7 +194,9 @@ class MatchSegmentRepository(db: Database) {
                 cursor.getString(cursor.getColumnIndexOrThrow("HomeTeam")),
                 cursor.getString(cursor.getColumnIndexOrThrow("AwayTeam")),
                 cursor.getString(cursor.getColumnIndexOrThrow("Notes")),
-                cursor.getInt(cursor.getColumnIndexOrThrow("StartTime"))
+                cursor.getInt(cursor.getColumnIndexOrThrow("StartTime")),
+                cursor.getInt(cursor.getColumnIndexOrThrow("HomeGoals")),
+                cursor.getInt(cursor.getColumnIndexOrThrow("AwayGoals"))
             ))
         }
 

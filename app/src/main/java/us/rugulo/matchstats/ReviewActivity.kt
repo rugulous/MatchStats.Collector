@@ -77,9 +77,16 @@ class ReviewActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxWidth().padding(20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        var header = "${vm.homeTeam} (${vm.homeGoals.intValue}) vs ${vm.awayTeam} (${vm.awayGoals.intValue})"
+                        if(vm.notes.trim().isNotEmpty()){
+                            header += "\n${vm.notes}"
+                        }
+
                         Text(
-                            "${vm.homeTeam} vs ${vm.awayTeam}\n${vm.notes}",
-                            fontSize = MaterialTheme.typography.headlineMedium.fontSize,
+                            header,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(0.dp, 5.dp),
                             textAlign = TextAlign.Center
                         )
                     }
@@ -102,11 +109,24 @@ class ReviewActivity : ComponentActivity() {
                     for (i in segment.homeStats.keys) {
                         val homeStats = segment.homeStats[i]!!
                         val awayStats = segment.awayStats[i]!!
+                        var label = vm.statTypes[i] ?: "Unknown"
+
+                        label += if(label.endsWith('s')){
+                            "es"
+                        } else {
+                            "s"
+                        }
+
+                        var modifier = Modifier.weight(1f)
+
+                        if(i != 1){
+                            modifier = modifier.padding(top = 10.dp)
+                        }
 
                         Row(Modifier.fillMaxWidth()) {
-                            Text(vm.statTypes[i] ?: "Unknown", Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                            Text(homeStats.size.toString(), Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                            Text(awayStats.size.toString(), Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                            Text(label, modifier, fontWeight = FontWeight.Bold)
+                            Text(homeStats.size.toString(), modifier, fontWeight = FontWeight.Bold)
+                            Text(awayStats.size.toString(), modifier, fontWeight = FontWeight.Bold)
                         }
 
                         when (i) {
@@ -132,7 +152,7 @@ class ReviewActivity : ComponentActivity() {
         types["Short"] = arrayOf(CornerOutcome.SHORT.value)
         types["Crossed"] = arrayOf(CornerOutcome.CROSS.value)
 
-        SubstatRow(homeStats, awayStats, types)
+        SubstatRowWithDefault(homeStats, awayStats, types)
     }
 
     @Composable
@@ -142,26 +162,43 @@ class ReviewActivity : ComponentActivity() {
         types["Lost"] = arrayOf(CrossOutcome.CORNER.value, CrossOutcome.CLEARED.value)
         types["Missed"] = arrayOf(CrossOutcome.OTHER_WING.value, CrossOutcome.OUT_OF_PLAY.value)
 
-        SubstatRow(homeStats, awayStats, types)
+        SubstatRowWithDefault(homeStats, awayStats, types)
     }
 
     @Composable
     fun ShotSubstats(homeStats: List<StatOccurrence>, awayStats: List<StatOccurrence>){
-        val types = mutableMapOf<String, Array<Int>>()
-        types["On Target"] = arrayOf(ShotOutcome.GOAL.value, ShotOutcome.SAVED.value)
-        types["Blocked"] = arrayOf(ShotOutcome.BLOCKED.value)
-        types["Off Target"] = arrayOf(ShotOutcome.OFF_TARGET.value)
+        val onTargetTypes = arrayOf(ShotOutcome.GOAL.value, ShotOutcome.SAVED.value)
+
+        val types = mutableMapOf<String, Pair<Array<Int>, (list: List<StatOccurrence>) -> Int>>()
+        types["On Target"] = Pair(
+            onTargetTypes,
+            ::countList
+        )
+
+        types["Goals"] = Pair(
+            arrayOf(ShotOutcome.GOAL.value)
+        ) { list -> list.count { onTargetTypes.contains(it.outcomeId) } }
+
+        types["Blocked"] = Pair(
+            arrayOf(ShotOutcome.BLOCKED.value),
+            ::countList
+        )
+
+        types["Off Target"] = Pair(
+            arrayOf(ShotOutcome.OFF_TARGET.value),
+            ::countList
+        )
 
         SubstatRow(homeStats, awayStats, types)
     }
 
     @Composable
-    fun SubstatRow(homeStats: List<StatOccurrence>, awayStats: List<StatOccurrence>, separator: Map<String, Array<Int>>){
-        separator.forEach{ s ->
-            val home = homeStats.count { s.value.contains(it.outcomeId) }
-            val homePc = if(homeStats.isEmpty()) "" else "(" + ((home / homeStats.size) * 100).toString() + "%)"
-            val away = awayStats.count { s.value.contains(it.outcomeId) }
-            val awayPc = if(awayStats.isEmpty()) "" else "(" + ((away / awayStats.size) * 100).toString() + "%)"
+    fun SubstatRow(homeStats: List<StatOccurrence>, awayStats: List<StatOccurrence>, substats: Map<String, Pair<Array<Int>, (list: List<StatOccurrence>) -> Int>>){
+        substats.forEach{ s ->
+            val home = homeStats.count { s.value.first.contains(it.outcomeId) }
+            val homePc = if(homeStats.isEmpty()) "" else "(" + Math.round((home.toDouble() / s.value.second(homeStats)) * 100).toString() + "%)"
+            val away = awayStats.count { s.value.first.contains(it.outcomeId) }
+            val awayPc = if(awayStats.isEmpty()) "" else "(" + Math.round((away.toDouble() / s.value.second(awayStats)) * 100).toString() + "%)"
 
             Row{
                 Text("- ${s.key}", fontStyle = FontStyle.Italic, color = Color.DarkGray, modifier = Modifier.weight(1f))
@@ -170,4 +207,18 @@ class ReviewActivity : ComponentActivity() {
             }
         }
     }
+
+    @Composable
+    fun SubstatRowWithDefault(homeStats: List<StatOccurrence>, awayStats: List<StatOccurrence>, substats: Map<String, Array<Int>>){
+        val stats = substats.map {
+            Pair<String, Pair<Array<Int>, (list: List<StatOccurrence>) -> Int>>(
+                it.key,
+                Pair(it.value, ::countList)
+            )
+        }.toMap()
+
+        SubstatRow(homeStats, awayStats, stats)
+    }
+
+    private fun countList(list: List<StatOccurrence>): Int = list.size
 }

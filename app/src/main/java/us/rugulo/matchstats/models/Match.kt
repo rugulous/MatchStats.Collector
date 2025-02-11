@@ -5,5 +5,7 @@ data class Match(
     val homeTeam: String,
     val awayTeam: String,
     val notes: String,
-    val startTimestamp: Int?
+    val startTimestamp: Int?,
+    val homeGoals: Int,
+    val awayGoals: Int
 )

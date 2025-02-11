@@ -2,13 +2,13 @@ package us.rugulo.matchstats
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.JsonWriter
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -43,6 +43,7 @@ import us.rugulo.matchstats.ui.viewmodel.MatchStatsViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import us.rugulo.matchstats.data.MatchSegmentType
 import us.rugulo.matchstats.data.StatType
+import us.rugulo.matchstats.models.StatOccurrence
 import us.rugulo.matchstats.models.StatOutcome
 
 class MainActivity : ComponentActivity() {
@@ -94,8 +95,13 @@ class MainActivity : ComponentActivity() {
                             .padding(20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        var header = "${vm.homeTeam} (${vm.homeGoals.intValue}) vs ${vm.awayTeam} (${vm.awayGoals.intValue})"
+                        if(vm.notes.trim().isNotEmpty()){
+                            header += "\n${vm.notes}"
+                        }
+
                         Text(
-                            "${viewModel.homeTeam} vs ${viewModel.awayTeam}\n${viewModel.notes}",
+                            header,
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(0.dp, 5.dp),
@@ -213,20 +219,7 @@ class MainActivity : ComponentActivity() {
                         .weight(1f)
                         .padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Button(
-                        onClick = { vm.openModalForAction(StatType.CORNER, isHome) },
-                        Modifier.fillMaxWidth()
-                    ) {
-                        Text("Corner")
-                    }
-
-                    Text(buildAnnotatedString {
-                        append("This half: ")
-
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(stats[StatType.CORNER.value]!!.size.toString())
-                        }
-                    })
+                    StatColumn("Corner", isHome, StatType.CORNER, stats)
                 }
 
                 Column(
@@ -234,20 +227,7 @@ class MainActivity : ComponentActivity() {
                         .weight(1f)
                         .padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Button(
-                        onClick = { vm.openModalForAction(StatType.CROSS, isHome) },
-                        Modifier.fillMaxWidth()
-                    ) {
-                        Text("Cross")
-                    }
-
-                    Text(buildAnnotatedString {
-                        append("This half: ")
-
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(stats[StatType.CROSS.value]!!.size.toString())
-                        }
-                    })
+                    StatColumn("Cross", isHome, StatType.CROSS, stats)
                 }
 
                 Column(
@@ -255,21 +235,46 @@ class MainActivity : ComponentActivity() {
                         .weight(1f)
                         .padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Button(
-                        onClick = { vm.openModalForAction(StatType.SHOT, isHome) },
-                        Modifier.fillMaxWidth()
-                    ) {
-                        Text("Shot")
+                    StatColumn("Shot", isHome, StatType.SHOT, stats)
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun StatColumn(caption: String, isHome: Boolean, statType: StatType, stats: Map<Int, List<StatOccurrence>>){
+        val featuredStats = stats[statType.value] ?: return
+        val segment = vm.currentSegment.value ?: return
+
+        Button(
+            onClick = { vm.openModalForAction(statType, isHome) },
+            Modifier.fillMaxWidth()
+        ) {
+            Text(caption)
+        }
+
+        Text(buildAnnotatedString {
+            append("This half: ")
+            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                append(featuredStats.size.toString())
+            }
+        })
+
+        LazyColumn(Modifier.padding(top = 20.dp)) {
+            items(featuredStats){
+                Text(buildAnnotatedString {
+                    val elapsedSeconds = (it.timestamp - segment.startTime) / 1000
+                    val minute = elapsedSeconds / 60
+                    val second = elapsedSeconds % 60
+
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)){
+                        append(minute.toString().padStart(2, '0'))
+                        append(':')
+                        append(second.toString().padStart(2, '0'))
                     }
 
-                    Text(buildAnnotatedString {
-                        append("This half: ")
-
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(stats[StatType.SHOT.value]!!.size.toString())
-                        }
-                    })
-                }
+                    append(" - ${it.outcomeName}")
+                }, Modifier.padding(top = 5.dp))
             }
         }
     }

@@ -52,7 +52,7 @@ class ListMatchesActivity : ComponentActivity() {
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(title = {
-                    Text("Previous Matches")
+                    Text("Matches")
                 })
             }
         ) { padding ->
