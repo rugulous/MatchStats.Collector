@@ -17,6 +17,8 @@ import us.rugulo.matchstats.data.MatchSegmentType
 import us.rugulo.matchstats.data.StatType
 import us.rugulo.matchstats.data.repository.MatchSegmentRepository
 import us.rugulo.matchstats.models.MatchSegment
+import us.rugulo.matchstats.models.PendingStat
+import us.rugulo.matchstats.models.StatOccurrence
 import us.rugulo.matchstats.models.StatOutcome
 
 class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : ViewModel() {
@@ -35,7 +37,8 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
     var homeTeam = ""
     var awayTeam = ""
     var notes = ""
-    val currentModalType = mutableStateOf<StatType?>(null)
+
+    val pendingStat = mutableStateOf<PendingStat?>(null)
     val outcomes = mutableListOf<StatOutcome>()
 
     val nextSegmentType = mutableStateOf(MatchSegmentType.FIRST_HALF)
@@ -88,25 +91,57 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
         inProgress.value = false
     }
 
-    fun openModalForAction(action: StatType){
+    fun openModalForAction(action: StatType, homeOrAway: Boolean, priorAction: Int? = null){
         outcomes.clear()
         allOutcomes[action.value]?.let {
             outcomes.addAll(it)
         }
 
-        currentModalType.value = action
+        pendingStat.value = PendingStat(
+            action,
+            homeOrAway,
+            System.currentTimeMillis(),
+            priorAction
+        )
     }
 
     fun handleChosenOutcome(outcome: StatOutcome){
+        val pending = pendingStat.value ?: throw Error("Missing pending stat")
+        val segment = currentSegment.value ?: throw Error("Missing current segment")
+
+        val statId = segmentRepo.recordStat(segment.id, pending, outcome)
+        val occurrence = StatOccurrence(
+            statId,
+            "",
+            pending.timestamp,
+            outcome.id,
+            outcome.name
+        )
+
+        val modifiedHomeStats = segment.homeStats.toMutableMap()
+        val modifiedAwayStats = segment.awayStats.toMutableMap()
+
+        if (pending.homeOrAway) {
+            val updatedList = modifiedHomeStats[pending.statType.value]?.toMutableList() ?: mutableListOf()
+            updatedList.add(occurrence)
+            modifiedHomeStats[pending.statType.value] = updatedList
+        } else {
+            val updatedList = modifiedAwayStats[pending.statType.value]?.toMutableList() ?: mutableListOf()
+            updatedList.add(occurrence)
+            modifiedAwayStats[pending.statType.value] = updatedList
+        }
+
+        currentSegment.value = segment.copy(homeStats = modifiedHomeStats, awayStats = modifiedAwayStats)
+
         if(outcome.nextAction != null){
-            openModalForAction(outcome.nextAction)
+            openModalForAction(outcome.nextAction, pending.homeOrAway, statId)
         } else {
             closeModal()
         }
     }
 
     fun closeModal(){
-        currentModalType.value = null
+        pendingStat.value = null
     }
 
     fun endMatch(){

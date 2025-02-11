@@ -8,6 +8,8 @@ import us.rugulo.matchstats.data.MatchSegmentType
 import us.rugulo.matchstats.data.StatType
 import us.rugulo.matchstats.models.Match
 import us.rugulo.matchstats.models.MatchSegment
+import us.rugulo.matchstats.models.PendingStat
+import us.rugulo.matchstats.models.StatOccurrence
 import us.rugulo.matchstats.models.StatOutcome
 
 class MatchSegmentRepository(db: Database) {
@@ -46,31 +48,20 @@ class MatchSegmentRepository(db: Database) {
         return name
     }
 
-    fun recordStat(segmentId: Int, homeOrAway: Boolean, statTypeId: Int){
+    fun recordStat(segmentId: Int, pending: PendingStat, outcome: StatOutcome): Int{
         val content = ContentValues()
         content.put("MatchSegmentId", segmentId)
-        content.put("HomeOrAway", homeOrAway)
-        content.put("StatTypeId", statTypeId)
-        content.put("Timestamp", System.currentTimeMillis())
+        content.put("HomeOrAway", pending.homeOrAway)
+        content.put("StatTypeId", pending.statType.value)
+        content.put("Timestamp", pending.timestamp)
+        content.put("PriorStatID", pending.priorActionId)
+        content.put("OutcomeID", outcome.id)
 
         val con = _db.writableDatabase
-        con.insert("MatchStats", null, content)
-        con.close()
-    }
-
-    fun removeStat(segmentId: Int, homeOrAway: Boolean, statTypeId: Int): Int{
-        val con = _db.writableDatabase
-
-        val statement = con.compileStatement("DELETE FROM MatchStats WHERE ID = (SELECT ID FROM MatchStats WHERE MatchSegmentId = ? AND HomeOrAway = ? AND StatTypeId = ? ORDER BY Timestamp DESC LIMIT 1)")
-        statement.bindLong(1, segmentId.toLong())
-        statement.bindLong(2, if(homeOrAway) 1L else 0L)
-        statement.bindLong(3, statTypeId.toLong())
-
-        val affected = statement.executeUpdateDelete()
-
+        val id = con.insert("MatchStats", null, content)
         con.close()
 
-        return affected
+        return id.toInt()
     }
 
     fun checkForIncompleteMatch(): Int?{
@@ -178,7 +169,6 @@ class MatchSegmentRepository(db: Database) {
         while(cursor.moveToNext()){
             val id = cursor.getInt(0)
             list.add(loadMatchSegment(id, con))
-            Log.d("LOAD", "Loaded segment $id")
         }
 
         cursor.close()
@@ -214,7 +204,7 @@ class MatchSegmentRepository(db: Database) {
         val map = mutableMapOf<Int, MutableList<StatOutcome>>()
 
         val con = _db.readableDatabase
-        val cursor = con.query("Outcomes", arrayOf("TriggeringStatTypeID", "Name", "NextActionID"), null, null, null, null, null, null)
+        val cursor = con.query("Outcomes", arrayOf("ID", "TriggeringStatTypeID", "Name", "NextActionID"), null, null, null, null, null, null)
 
         while(cursor.moveToNext()){
             val trigger = cursor.getInt(cursor.getColumnIndexOrThrow("TriggeringStatTypeID"))
@@ -225,6 +215,7 @@ class MatchSegmentRepository(db: Database) {
 
             map[trigger]!!.add(
                 StatOutcome(
+                    cursor.getInt(cursor.getColumnIndexOrThrow("ID")),
                     cursor.getString(cursor.getColumnIndexOrThrow("Name")),
                     StatType.fromInt(cursor.getInt(cursor.getColumnIndexOrThrow("NextActionID")))
                 )
@@ -246,8 +237,8 @@ class MatchSegmentRepository(db: Database) {
             MatchSegmentType.fromInt(cursor.getInt(cursor.getColumnIndexOrThrow("SegmentTypeId"))),
             cursor.getString(cursor.getColumnIndexOrThrow("Name")),
             cursor.getString(cursor.getColumnIndexOrThrow("Code")),
-            listStats(id, con, true),
-            listStats(id, con, false),
+            countStats(id, con, true),
+            countStats(id, con, false),
             cursor.getLong(cursor.getColumnIndexOrThrow("StartTime"))
         )
 
@@ -256,19 +247,29 @@ class MatchSegmentRepository(db: Database) {
     }
 
     //todo: move this somewhere better
-    private fun listStats(segmentId: Int, con: SQLiteDatabase, homeOrAway: Boolean): MutableMap<Int, Int>{
-        val map = mutableMapOf<Int, Int>()
+    private fun countStats(segmentId: Int, con: SQLiteDatabase, homeOrAway: Boolean): MutableMap<Int, MutableList<StatOccurrence>>{
+        val map = mutableMapOf<Int, MutableList<StatOccurrence>>()
+        StatType.entries.forEach {
+            map[it.value] = mutableListOf()
+        }
 
-        Log.d("LOADING", "Loading stats for segment $segmentId (homeOrAway: $homeOrAway)")
-
-        val cursor = con.rawQuery("SELECT st.ID, SUM(CASE WHEN ms.ID IS NOT NULL THEN 1 ELSE 0 END) Total FROM StatTypes st LEFT OUTER JOIN MatchStats ms ON ms.StatTypeId = st.ID AND ms.MatchSegmentId = ? AND HomeOrAway = ? GROUP BY st.ID", arrayOf(segmentId.toString(), if(homeOrAway) "1" else "0"))
+        val cursor = con.rawQuery("SELECT s.ID, s.StatTypeId, st.Description, s.Timestamp, s.OutcomeID, o.Name FROM MatchSegments ms INNER JOIN MatchStats s ON s.MatchSegmentId = ms.ID INNER JOIN StatTypes st ON st.ID = s.StatTypeId INNER JOIN Outcomes o ON o.ID = s.OutcomeID WHERE MatchSegmentId = ? AND HomeOrAway = ? ORDER BY ms.ID", arrayOf(segmentId.toString(), if(homeOrAway) "1" else "0"))
 
         while(cursor.moveToNext()){
-            val id = cursor.getInt(cursor.getColumnIndexOrThrow("ID"))
-            val total = cursor.getInt(cursor.getColumnIndexOrThrow("Total"))
-            map[id] = total
+            val statType = cursor.getInt(cursor.getColumnIndexOrThrow("StatTypeId"))
+            val stat = StatOccurrence(
+                cursor.getInt(cursor.getColumnIndexOrThrow("ID")),
+                cursor.getString(cursor.getColumnIndexOrThrow("Description")),
+                cursor.getLong(cursor.getColumnIndexOrThrow("Timestamp")),
+                cursor.getInt(cursor.getColumnIndexOrThrow("OutcomeID")),
+                cursor.getString(cursor.getColumnIndexOrThrow("Name"))
+            )
 
-            Log.d("LOADING", "Found total of $total for stat $id")
+            if(!map.containsKey(statType)){
+                map[statType] = mutableListOf()
+            }
+
+            map[statType]!!.add(stat)
         }
 
         cursor.close()

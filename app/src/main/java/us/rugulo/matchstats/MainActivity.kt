@@ -2,6 +2,8 @@ package us.rugulo.matchstats
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.JsonWriter
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -173,7 +175,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            if (viewModel.currentModalType.value != null) {
+            if (viewModel.pendingStat.value != null) {
                 OutcomeDialog(vm.outcomes)
             }
         }
@@ -212,7 +214,7 @@ class MainActivity : ComponentActivity() {
                         .padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Button(
-                        onClick = { vm.openModalForAction(StatType.CORNER) },
+                        onClick = { vm.openModalForAction(StatType.CORNER, isHome) },
                         Modifier.fillMaxWidth()
                     ) {
                         Text("Corner")
@@ -222,7 +224,7 @@ class MainActivity : ComponentActivity() {
                         append("This half: ")
 
                         withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(stats[StatType.CORNER.value].toString())
+                            append(stats[StatType.CORNER.value]!!.size.toString())
                         }
                     })
                 }
@@ -233,7 +235,7 @@ class MainActivity : ComponentActivity() {
                         .padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Button(
-                        onClick = { vm.openModalForAction(StatType.CROSS) },
+                        onClick = { vm.openModalForAction(StatType.CROSS, isHome) },
                         Modifier.fillMaxWidth()
                     ) {
                         Text("Cross")
@@ -243,7 +245,7 @@ class MainActivity : ComponentActivity() {
                         append("This half: ")
 
                         withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(stats[StatType.CROSS.value].toString())
+                            append(stats[StatType.CROSS.value]!!.size.toString())
                         }
                     })
                 }
@@ -254,7 +256,7 @@ class MainActivity : ComponentActivity() {
                         .padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Button(
-                        onClick = { vm.openModalForAction(StatType.SHOT) },
+                        onClick = { vm.openModalForAction(StatType.SHOT, isHome) },
                         Modifier.fillMaxWidth()
                     ) {
                         Text("Shot")
@@ -264,7 +266,7 @@ class MainActivity : ComponentActivity() {
                         append("This half: ")
 
                         withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(stats[StatType.SHOT.value].toString())
+                            append(stats[StatType.SHOT.value]!!.size.toString())
                         }
                     })
                 }

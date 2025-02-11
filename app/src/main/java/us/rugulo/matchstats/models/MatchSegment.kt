@@ -7,7 +7,7 @@ data class MatchSegment (
     val type: MatchSegmentType,
     val name: String,
     val code: String,
-    var homeStats: MutableMap<Int, Int>,
-    var awayStats: MutableMap<Int, Int>,
+    var homeStats: MutableMap<Int, MutableList<StatOccurrence>>,
+    var awayStats: MutableMap<Int, MutableList<StatOccurrence>>,
     val startTime: Long
 )
