@@ -14,25 +14,29 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import us.rugulo.matchstats.MatchStatsApp
 import us.rugulo.matchstats.data.MatchSegmentType
+import us.rugulo.matchstats.data.StatType
 import us.rugulo.matchstats.data.repository.MatchSegmentRepository
 import us.rugulo.matchstats.models.MatchSegment
+import us.rugulo.matchstats.models.StatOutcome
 
 class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : ViewModel() {
     private var segmentRepo = matchSegmentRepository
     private var timerJob: Job? = null
     private var matchId: Int? = null
     private val isMatchFinished = MutableStateFlow(false)
+    private val allOutcomes = matchSegmentRepository.getAvailableOutcomes()
 
     val navigateToNextScreen: SharedFlow<Boolean> = isMatchFinished
 
     val inProgress = mutableStateOf(false)
     val currentSegment = mutableStateOf<MatchSegment?>(null)
-    val statTypes: Map<Int, String> = matchSegmentRepository.getStatTypes()
     val elapsedMinutes = mutableStateOf("")
     val elapsedSeconds = mutableStateOf("")
     var homeTeam = ""
     var awayTeam = ""
     var notes = ""
+    val currentModalType = mutableStateOf<StatType?>(null)
+    val outcomes = mutableListOf<StatOutcome>()
 
     val nextSegmentType = mutableStateOf(MatchSegmentType.FIRST_HALF)
     val nextSegmentName = mutableStateOf("Match")
@@ -84,42 +88,29 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
         inProgress.value = false
     }
 
-    fun incrementStat(isHome: Boolean, statTypeId: Int){
-        val segment = currentSegment.value ?: return
+    fun openModalForAction(action: StatType){
+        outcomes.clear()
+        allOutcomes[action.value]?.let {
+            outcomes.addAll(it)
+        }
 
-        segmentRepo.recordStat(segment.id, isHome, statTypeId)
-        updateUiStatCount(isHome, statTypeId, 1)
+        currentModalType.value = action
     }
 
-    fun decrementStat(isHome: Boolean, statTypeId: Int){
-        val segment = currentSegment.value ?: return
+    fun handleChosenOutcome(outcome: StatOutcome){
+        if(outcome.nextAction != null){
+            openModalForAction(outcome.nextAction)
+        } else {
+            closeModal()
+        }
+    }
 
-        val change = segmentRepo.removeStat(segment.id, isHome, statTypeId)
-        updateUiStatCount(isHome, statTypeId, -change)
+    fun closeModal(){
+        currentModalType.value = null
     }
 
     fun endMatch(){
         isMatchFinished.value = true
-    }
-
-    private fun updateUiStatCount(isHome: Boolean, statTypeId: Int, changeBy: Int) {
-        if(changeBy == 0){
-            return
-        }
-
-        val segment = currentSegment.value ?: return
-
-        val updatedHomeStats = segment.homeStats.toMutableMap()
-        val updatedAwayStats = segment.awayStats.toMutableMap()
-
-        if (isHome) {
-            updatedHomeStats[statTypeId] = updatedHomeStats.getOrDefault(statTypeId, 0) + changeBy
-        } else {
-            updatedAwayStats[statTypeId] = updatedAwayStats.getOrDefault(statTypeId, 0) + changeBy
-        }
-
-        // Create a new MatchSegment with updated stats and reassign it, so that the UI knows to update
-        currentSegment.value = segment.copy(homeStats = updatedHomeStats, awayStats = updatedAwayStats)
     }
 
     private fun startTimer(){

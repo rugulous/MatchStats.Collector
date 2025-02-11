@@ -12,6 +12,7 @@ class MatchStatsApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        this.deleteDatabase(Database.DATABASE_NAME)
         database = Database(this)
         matchSegmentRepository = MatchSegmentRepository(database)
     }

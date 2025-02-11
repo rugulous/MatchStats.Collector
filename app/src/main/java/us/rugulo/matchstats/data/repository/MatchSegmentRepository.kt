@@ -5,8 +5,10 @@ import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import us.rugulo.matchstats.data.Database
 import us.rugulo.matchstats.data.MatchSegmentType
+import us.rugulo.matchstats.data.StatType
 import us.rugulo.matchstats.models.Match
 import us.rugulo.matchstats.models.MatchSegment
+import us.rugulo.matchstats.models.StatOutcome
 
 class MatchSegmentRepository(db: Database) {
     private val _db: Database = db
@@ -206,6 +208,33 @@ class MatchSegmentRepository(db: Database) {
         con.close()
 
         return list
+    }
+
+    fun getAvailableOutcomes(): Map<Int, List<StatOutcome>>{
+        val map = mutableMapOf<Int, MutableList<StatOutcome>>()
+
+        val con = _db.readableDatabase
+        val cursor = con.query("Outcomes", arrayOf("TriggeringStatTypeID", "Name", "NextActionID"), null, null, null, null, null, null)
+
+        while(cursor.moveToNext()){
+            val trigger = cursor.getInt(cursor.getColumnIndexOrThrow("TriggeringStatTypeID"))
+
+            if(!map.containsKey(trigger)){
+                map[trigger] = mutableListOf()
+            }
+
+            map[trigger]!!.add(
+                StatOutcome(
+                    cursor.getString(cursor.getColumnIndexOrThrow("Name")),
+                    StatType.fromInt(cursor.getInt(cursor.getColumnIndexOrThrow("NextActionID")))
+                )
+            )
+        }
+
+        cursor.close()
+        con.close()
+
+        return map
     }
 
     private fun loadMatchSegment(id: Int, con: SQLiteDatabase): MatchSegment{
