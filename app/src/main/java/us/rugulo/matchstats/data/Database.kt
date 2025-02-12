@@ -9,8 +9,8 @@ class Database(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
         db.execSQL("CREATE TABLE StatTypes (ID INTEGER PRIMARY KEY AUTOINCREMENT, Description TEXT NOT NULL)")
         db.execSQL("INSERT INTO StatTypes (Description) VALUES ('Cross'), ('Shot'), ('Corner')")
 
-        db.execSQL("CREATE TABLE MatchSegmentTypes (ID INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT NOT NULL, Code TEXT NOT NULL)")
-        db.execSQL("INSERT INTO MatchSegmentTypes (Name, Code) VALUES ('First Half', '1H'), ('Second Half', '2H'), ('Extra Time First Half', '1ET'), ('Extra Time Second Half', '2ET')")
+        db.execSQL("CREATE TABLE MatchSegmentTypes (ID INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT NOT NULL, Code TEXT NOT NULL, MinuteOffset INTEGER NOT NULL)")
+        db.execSQL("INSERT INTO MatchSegmentTypes (Name, Code, MinuteOffset) VALUES ('First Half', '1H', 0), ('Second Half', '2H', 45), ('Extra Time First Half', '1ET', 90), ('Extra Time Second Half', '2ET', 105)")
 
         db.execSQL("CREATE TABLE Outcomes (ID INTEGER PRIMARY KEY AUTOINCREMENT, TriggeringStatTypeID INT NOT NULL, Name TEXT NOT NULL, NextActionID INT)")
         db.execSQL("INSERT INTO Outcomes (TriggeringStatTypeID, Name, NextActionID) VALUES (1, 'Shot', 2), (1, 'Controlled', NULL), (1, 'Cleared', NULL), (1, 'Corner', 3), (1, 'Out of Play', NULL), (1, 'Other Wing', NULL), (2, 'Blocked', NULL), (2, 'Saved', NULL), (2, 'Goal', NULL), (2, 'Off Target', NULL), (3, 'Short', NULL), (3, 'Cross', 1)")

@@ -144,7 +144,7 @@ class MatchSegmentRepository(db: Database) {
         return id.toInt()
     }
 
-    //todo: move this somewhere better (and add typings)
+    //todo: move this somewhere better
     fun getMatchDetails(id: Int): Match{
         val con = _db.readableDatabase
         val cursor = con.rawQuery("SELECT ID, HomeTeam, AwayTeam, Notes, ms.StartTime, (SELECT COUNT(*) FROM MatchStats ms INNER JOIN MatchSegments s ON s.ID = ms.MatchSegmentId WHERE StatTypeId = 2 AND OutcomeId = 9 AND HomeOrAway = 1 AND s.MatchId = m.ID) HomeGoals, (SELECT COUNT(*) FROM MatchStats ms INNER JOIN MatchSegments s ON s.ID = ms.MatchSegmentId WHERE StatTypeId = 2 AND OutcomeId = 9 AND HomeOrAway = 0 AND s.MatchId = m.ID) AwayGoals FROM Matches m LEFT OUTER JOIN (SELECT MatchID, MIN(StartTime) StartTime FROM MatchSegments ms GROUP BY MatchID) ms ON ms.MatchID = m.ID WHERE ID = ?", arrayOf(id.toString()))
@@ -235,7 +235,7 @@ class MatchSegmentRepository(db: Database) {
     }
 
     private fun loadMatchSegment(id: Int, con: SQLiteDatabase): MatchSegment{
-        val cursor = con.rawQuery("SELECT ms.ID, ms.SegmentTypeId, ms.StartTime, s.Name, s.Code FROM MatchSegments ms INNER JOIN MatchSegmentTypes s ON s.ID = ms.SegmentTypeId WHERE ms.ID = ?", arrayOf(id.toString()))
+        val cursor = con.rawQuery("SELECT ms.ID, ms.SegmentTypeId, ms.StartTime, s.Name, s.Code, s.MinuteOffset FROM MatchSegments ms INNER JOIN MatchSegmentTypes s ON s.ID = ms.SegmentTypeId WHERE ms.ID = ?", arrayOf(id.toString()))
         cursor.moveToNext()
 
         val segment = MatchSegment(
@@ -245,7 +245,8 @@ class MatchSegmentRepository(db: Database) {
             cursor.getString(cursor.getColumnIndexOrThrow("Code")),
             countStats(id, con, true),
             countStats(id, con, false),
-            cursor.getLong(cursor.getColumnIndexOrThrow("StartTime"))
+            cursor.getLong(cursor.getColumnIndexOrThrow("StartTime")),
+            cursor.getInt(cursor.getColumnIndexOrThrow("MinuteOffset"))
         )
 
         cursor.close()

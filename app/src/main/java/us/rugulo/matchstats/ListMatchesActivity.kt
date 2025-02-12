@@ -87,13 +87,14 @@ class ListMatchesActivity : ComponentActivity() {
                 modifier = Modifier.fillMaxWidth().padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("${match.homeTeam} vs ${match.awayTeam}",
+                Text("${match.homeTeam} vs ${match.awayTeam}\n${match.homeGoals} - ${match.awayGoals}",
                     fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
                 )
 
                 if(match.notes.trim().isNotEmpty()){
-                    Text(match.notes, fontSize = 20.sp)
+                    Text(match.notes, fontSize = 20.sp, textAlign = TextAlign.Center)
                 }
             }
         }

@@ -95,7 +95,7 @@ class MainActivity : ComponentActivity() {
                             .padding(20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        var header = "${vm.homeTeam} (${vm.homeGoals.intValue}) vs ${vm.awayTeam} (${vm.awayGoals.intValue})"
+                        var header = "${vm.homeTeam} vs ${vm.awayTeam}\n${vm.homeGoals.intValue} - ${vm.awayGoals.intValue}"
                         if(vm.notes.trim().isNotEmpty()){
                             header += "\n${vm.notes}"
                         }
