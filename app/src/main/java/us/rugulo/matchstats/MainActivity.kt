@@ -163,7 +163,7 @@ class MainActivity : ComponentActivity() {
                             },
                             modifier = Modifier.padding(12.dp)
                         ) {
-                            Text("Home")
+                            Text(vm.homeTeam)
                         }
                         Tab(
                             pagerState.currentPage == 1, {
@@ -172,7 +172,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }, Modifier.padding(12.dp)
                         ) {
-                            Text("Away")
+                            Text(vm.awayTeam)
                         }
                     }
                     TabContent(pagerState)
@@ -187,7 +187,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun TabContent(pagerState: PagerState, modifier: Modifier = Modifier) {
-        HorizontalPager(state = pagerState) { index ->
+        HorizontalPager(state = pagerState, userScrollEnabled = false) { index ->
             StatsScreen(
                 modifier = modifier,
                 isHome = index == 0
