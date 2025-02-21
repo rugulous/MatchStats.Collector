@@ -11,7 +11,8 @@ class StatSyncDTO {
     data class StatsDTO(
         val id: Int,
         val description: String,
-        val isActive: Boolean
+        val isActive: Boolean,
+        val sortOrder: Int?
     )
 
     @Serializable
@@ -20,6 +21,8 @@ class StatSyncDTO {
         val triggeringStatTypeId: Int,
         val name: String,
         val nextActionId: Int?,
-        val isActive: Boolean
+        val isActive: Boolean,
+        val sortOrder: Int?,
+        val isGoal: Boolean
     )
 }

@@ -16,7 +16,6 @@ import kotlinx.coroutines.launch
 import us.rugulo.matchstats.MatchStatsApp
 import us.rugulo.matchstats.data.MatchSegmentType
 import us.rugulo.matchstats.data.ShotOutcome
-import us.rugulo.matchstats.data.StatType
 import us.rugulo.matchstats.data.repository.MatchSegmentRepository
 import us.rugulo.matchstats.models.MatchSegment
 import us.rugulo.matchstats.models.PendingStat
@@ -97,9 +96,9 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
         inProgress.value = false
     }
 
-    fun openModalForAction(action: StatType, homeOrAway: Boolean, priorAction: Int? = null){
+    fun openModalForAction(action: Int, homeOrAway: Boolean, priorAction: Int? = null){
         outcomes.clear()
-        allOutcomes[action.value]?.let {
+        allOutcomes[action]?.let {
             outcomes.addAll(it)
         }
 
@@ -119,7 +118,7 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
         val occurrence = StatOccurrence(
             statId,
             pending.homeOrAway,
-            pending.statType.value,
+            pending.statType,
             "",
             pending.timestamp,
             outcome.id,
@@ -130,13 +129,13 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
         val modifiedAwayStats = segment.awayStats.toMutableMap()
 
         if (pending.homeOrAway) {
-            val updatedList = modifiedHomeStats[pending.statType.value]?.toMutableList() ?: mutableListOf()
+            val updatedList = modifiedHomeStats[pending.statType]?.toMutableList() ?: mutableListOf()
             updatedList.add(occurrence)
-            modifiedHomeStats[pending.statType.value] = updatedList
+            modifiedHomeStats[pending.statType] = updatedList
         } else {
-            val updatedList = modifiedAwayStats[pending.statType.value]?.toMutableList() ?: mutableListOf()
+            val updatedList = modifiedAwayStats[pending.statType]?.toMutableList() ?: mutableListOf()
             updatedList.add(occurrence)
-            modifiedAwayStats[pending.statType.value] = updatedList
+            modifiedAwayStats[pending.statType] = updatedList
         }
 
         currentSegment.value = segment.copy(homeStats = modifiedHomeStats, awayStats = modifiedAwayStats)

@@ -6,14 +6,12 @@ import android.database.sqlite.SQLiteOpenHelper
 
 class Database(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL("CREATE TABLE StatTypes (ID INTEGER PRIMARY KEY AUTOINCREMENT, Description TEXT NOT NULL, IsActive INTEGER NOT NULL DEFAULT 1)")
-        db.execSQL("INSERT INTO StatTypes (Description) VALUES ('Cross'), ('Shot'), ('Corner')")
+        db.execSQL("CREATE TABLE StatTypes (ID INTEGER PRIMARY KEY AUTOINCREMENT, Description TEXT NOT NULL, IsActive INTEGER NOT NULL, SortOrder INTEGER)")
+
+        db.execSQL("CREATE TABLE Outcomes (ID INTEGER PRIMARY KEY AUTOINCREMENT, TriggeringStatTypeID INT NOT NULL, Name TEXT NOT NULL, NextActionID INT, IsActive INTEGER NOT NULL, SortOrder INTEGER, IsGoal INTEGER NOT NULL)")
 
         db.execSQL("CREATE TABLE MatchSegmentTypes (ID INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT NOT NULL, Code TEXT NOT NULL, MinuteOffset INTEGER NOT NULL)")
         db.execSQL("INSERT INTO MatchSegmentTypes (Name, Code, MinuteOffset) VALUES ('First Half', '1H', 0), ('Second Half', '2H', 45), ('Extra Time First Half', '1ET', 90), ('Extra Time Second Half', '2ET', 105)")
-
-        db.execSQL("CREATE TABLE Outcomes (ID INTEGER PRIMARY KEY AUTOINCREMENT, TriggeringStatTypeID INT NOT NULL, Name TEXT NOT NULL, NextActionID INT, IsActive INTEGER NOT NULL DEFAULT 1)")
-        db.execSQL("INSERT INTO Outcomes (TriggeringStatTypeID, Name, NextActionID) VALUES (1, 'Shot', 2), (1, 'Controlled', NULL), (1, 'Cleared', NULL), (1, 'Corner', 3), (1, 'Out of Play', NULL), (1, 'Other Wing', NULL), (2, 'Blocked', NULL), (2, 'Saved', NULL), (2, 'Goal', NULL), (2, 'Off Target', NULL), (3, 'Short', NULL), (3, 'Cross', 1)")
 
         db.execSQL("CREATE TABLE Matches (ID INTEGER PRIMARY KEY AUTOINCREMENT, HomeTeam TEXT NOT NULL, AwayTeam TEXT NOT NULL, Notes TEXT, WebID TEXT)")
 
@@ -32,8 +30,12 @@ class Database(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
         }
 
         if(oldVersion < 3 && newVersion >= 3){
-            db.execSQL("ALTER TABLE StatTypes ADD COLUMN IsActive INTEGER NOT NULL DEFAULT 1")
-            db.execSQL("ALTER TABLE Outcomes ADD COLUMN IsActive INTEGER NOT NULL DEFAULT 1")
+            db.execSQL("ALTER TABLE StatTypes ADD COLUMN IsActive INTEGER NOT NULL")
+            db.execSQL("ALTER TABLE StatTypes ADD COLUMN SortOrder INTEGER")
+
+            db.execSQL("ALTER TABLE Outcomes ADD COLUMN IsActive INTEGER NOT NULL")
+            db.execSQL("ALTER TABLE Outcomes ADD COLUMN SortOrder INTEGER")
+            db.execSQL("ALTER TABLE Outcomes ADD COLUMN IsGoal INTEGER NOT NULL")
         }
     }
 

@@ -1,8 +1,8 @@
 package us.rugulo.matchstats.data.repository
 
 import android.content.ContentValues
+import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
-import okhttp3.internal.concat
 import us.rugulo.matchstats.data.Database
 import us.rugulo.matchstats.data.MatchSegmentType
 import us.rugulo.matchstats.data.StatType
@@ -13,6 +13,14 @@ import us.rugulo.matchstats.models.StatOccurrence
 import us.rugulo.matchstats.models.StatOutcome
 import us.rugulo.matchstats.models.StatSyncDTO
 import java.util.UUID
+
+fun Cursor.getIntOrNull(column: Int): Int?{
+    if(this.isNull(column)){
+        return null
+    }
+
+    return this.getInt(column)
+}
 
 class MatchSegmentRepository(db: Database) {
     private val _db: Database = db
@@ -54,7 +62,7 @@ class MatchSegmentRepository(db: Database) {
         val content = ContentValues()
         content.put("MatchSegmentId", segmentId)
         content.put("HomeOrAway", pending.homeOrAway)
-        content.put("StatTypeId", pending.statType.value)
+        content.put("StatTypeId", pending.statType)
         content.put("Timestamp", pending.timestamp)
         content.put("PriorStatID", pending.priorActionId)
         content.put("OutcomeID", outcome.id)
@@ -237,7 +245,7 @@ class MatchSegmentRepository(db: Database) {
                 StatOutcome(
                     cursor.getInt(cursor.getColumnIndexOrThrow("ID")),
                     cursor.getString(cursor.getColumnIndexOrThrow("Name")),
-                    StatType.fromInt(cursor.getInt(cursor.getColumnIndexOrThrow("NextActionID")))
+                    cursor.getIntOrNull(cursor.getColumnIndexOrThrow("NextActionID"))
                 )
             )
         }
@@ -258,17 +266,17 @@ class MatchSegmentRepository(db: Database) {
         val con = _db.writableDatabase
 
         for (stat in data.stats){
-            upsert(con, "StatTypes", stat.id.toString(), arrayOf("Description", "IsActive"), arrayOf(stat.description, if(stat.isActive) "1" else "0"))
+            upsert(con, "StatTypes", stat.id.toString(), arrayOf("Description", "IsActive", "SortOrder"), arrayOf(stat.description, if(stat.isActive) "1" else "0", stat.sortOrder?.toString()))
         }
 
         for(outcome in data.outcomes){
-            upsert(con, "Outcomes", outcome.id.toString(), arrayOf("TriggeringStatTypeID", "Name", "NextActionID", "IsActive"), arrayOf(outcome.triggeringStatTypeId.toString(), outcome.name, outcome.nextActionId.toString(), if(outcome.isActive) "1" else "0"))
+            upsert(con, "Outcomes", outcome.id.toString(), arrayOf("TriggeringStatTypeID", "Name", "NextActionID", "IsActive", "SortOrder", "IsGoal"), arrayOf(outcome.triggeringStatTypeId.toString(), outcome.name, outcome.nextActionId?.toString(), if(outcome.isActive) "1" else "0", outcome.sortOrder?.toString(), if(outcome.isGoal) "1" else "0"))
         }
 
         con.close()
     }
 
-    private fun upsert(con: SQLiteDatabase, table: String, pk: String, fields: Array<String>, values: Array<String>){
+    private fun upsert(con: SQLiteDatabase, table: String, pk: String, fields: Array<String>, values: Array<String?>){
         val cur = con.rawQuery("SELECT 1 FROM $table WHERE ID = ?", arrayOf(pk))
         val exists = cur.moveToNext()
         cur.close()
@@ -287,7 +295,9 @@ class MatchSegmentRepository(db: Database) {
             sql += ",?)"
         }
 
-        con.execSQL(sql, values.concat(pk))
+        val parameters = values + pk
+
+        con.execSQL(sql, parameters)
     }
 
     private fun loadMatchSegment(id: Int, con: SQLiteDatabase): MatchSegment{

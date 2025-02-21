@@ -73,7 +73,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun FootballStatsApp(viewModel: MatchStatsViewModel = viewModel()) {
         val pagerState = rememberPagerState(pageCount = { 2 })
@@ -187,7 +187,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun TabContent(pagerState: PagerState, modifier: Modifier = Modifier) {
         HorizontalPager(state = pagerState) { index ->
@@ -219,7 +218,7 @@ class MainActivity : ComponentActivity() {
                         .weight(1f)
                         .padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    StatColumn("Corner", isHome, StatType.CORNER, stats)
+                    StatColumn("Corner", isHome, StatType.CORNER.value, stats)
                 }
 
                 Column(
@@ -227,7 +226,7 @@ class MainActivity : ComponentActivity() {
                         .weight(1f)
                         .padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    StatColumn("Cross", isHome, StatType.CROSS, stats)
+                    StatColumn("Cross", isHome, StatType.CROSS.value, stats)
                 }
 
                 Column(
@@ -235,15 +234,15 @@ class MainActivity : ComponentActivity() {
                         .weight(1f)
                         .padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    StatColumn("Shot", isHome, StatType.SHOT, stats)
+                    StatColumn("Shot", isHome, StatType.SHOT.value, stats)
                 }
             }
         }
     }
 
     @Composable
-    fun StatColumn(caption: String, isHome: Boolean, statType: StatType, stats: Map<Int, List<StatOccurrence>>){
-        val featuredStats = stats[statType.value] ?: return
+    fun StatColumn(caption: String, isHome: Boolean, statType: Int, stats: Map<Int, List<StatOccurrence>>){
+        val featuredStats = stats[statType] ?: return
         val segment = vm.currentSegment.value ?: return
 
         Button(
