@@ -128,7 +128,6 @@ class ReviewActivity : ComponentActivity() {
         }
     }
 
-    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun TabContent(segments: List<MatchSegment>) {
         val scope = rememberCoroutineScope()

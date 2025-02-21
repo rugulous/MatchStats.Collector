@@ -2,6 +2,7 @@ package us.rugulo.matchstats.data.repository
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
+import okhttp3.internal.concat
 import us.rugulo.matchstats.data.Database
 import us.rugulo.matchstats.data.MatchSegmentType
 import us.rugulo.matchstats.data.StatType
@@ -10,6 +11,7 @@ import us.rugulo.matchstats.models.MatchSegment
 import us.rugulo.matchstats.models.PendingStat
 import us.rugulo.matchstats.models.StatOccurrence
 import us.rugulo.matchstats.models.StatOutcome
+import us.rugulo.matchstats.models.StatSyncDTO
 import java.util.UUID
 
 class MatchSegmentRepository(db: Database) {
@@ -250,6 +252,42 @@ class MatchSegmentRepository(db: Database) {
         val con = _db.writableDatabase
         con.execSQL("UPDATE Matches SET WebID = ? WHERE ID = ?", arrayOf(uploadId, matchId))
         con.close()
+    }
+
+    fun syncStats(data: StatSyncDTO){
+        val con = _db.writableDatabase
+
+        for (stat in data.stats){
+            upsert(con, "StatTypes", stat.id.toString(), arrayOf("Description", "IsActive"), arrayOf(stat.description, if(stat.isActive) "1" else "0"))
+        }
+
+        for(outcome in data.outcomes){
+            upsert(con, "Outcomes", outcome.id.toString(), arrayOf("TriggeringStatTypeID", "Name", "NextActionID", "IsActive"), arrayOf(outcome.triggeringStatTypeId.toString(), outcome.name, outcome.nextActionId.toString(), if(outcome.isActive) "1" else "0"))
+        }
+
+        con.close()
+    }
+
+    private fun upsert(con: SQLiteDatabase, table: String, pk: String, fields: Array<String>, values: Array<String>){
+        val cur = con.rawQuery("SELECT 1 FROM $table WHERE ID = ?", arrayOf(pk))
+        val exists = cur.moveToNext()
+        cur.close()
+
+        var sql: String
+
+        if(exists){
+            sql = "UPDATE $table SET "
+            sql += fields.joinToString(separator = ", ") { "$it = ?" }
+            sql += " WHERE ID = ?"
+        } else {
+            sql = "INSERT INTO $table ("
+            sql += fields.joinToString(", ")
+            sql += ", ID) VALUES ("
+            sql += values.joinToString { "?" }
+            sql += ",?)"
+        }
+
+        con.execSQL(sql, values.concat(pk))
     }
 
     private fun loadMatchSegment(id: Int, con: SQLiteDatabase): MatchSegment{
