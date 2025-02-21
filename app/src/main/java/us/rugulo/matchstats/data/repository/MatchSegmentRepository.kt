@@ -232,7 +232,7 @@ class MatchSegmentRepository(db: Database) {
         val map = mutableMapOf<Int, MutableList<StatOutcome>>()
 
         val con = _db.readableDatabase
-        val cursor = con.query("Outcomes", arrayOf("ID", "TriggeringStatTypeID", "Name", "NextActionID"), null, null, null, null, null, null)
+        val cursor = con.query("Outcomes", arrayOf("ID", "TriggeringStatTypeID", "Name", "NextActionID"), null, null, null, null, "SortOrder", null)
 
         while(cursor.moveToNext()){
             val trigger = cursor.getInt(cursor.getColumnIndexOrThrow("TriggeringStatTypeID"))
@@ -260,6 +260,27 @@ class MatchSegmentRepository(db: Database) {
         val con = _db.writableDatabase
         con.execSQL("UPDATE Matches SET WebID = ? WHERE ID = ?", arrayOf(uploadId, matchId))
         con.close()
+    }
+
+    fun getAvailableStats(): List<us.rugulo.matchstats.models.StatType>{
+        val types = mutableListOf<us.rugulo.matchstats.models.StatType>()
+
+        val con = _db.readableDatabase
+        val cursor = con.query("StatTypes", arrayOf("ID, Description"), "IsActive = ?", arrayOf("1"), null, null, "SortOrder")
+
+        while(cursor.moveToNext()){
+            types.add(
+                us.rugulo.matchstats.models.StatType(
+                    cursor.getInt(cursor.getColumnIndexOrThrow("ID")),
+                    cursor.getString(cursor.getColumnIndexOrThrow("Description"))
+                )
+            )
+        }
+
+        cursor.close()
+        con.close()
+
+        return types
     }
 
     fun syncStats(data: StatSyncDTO){

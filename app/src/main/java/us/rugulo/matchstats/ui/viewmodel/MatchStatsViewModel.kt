@@ -43,6 +43,7 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
 
     val pendingStat = mutableStateOf<PendingStat?>(null)
     val outcomes = mutableListOf<StatOutcome>()
+    val availableStats = matchSegmentRepository.getAvailableStats()
 
     val nextSegmentType = mutableStateOf(MatchSegmentType.FIRST_HALF)
     val nextSegmentName = mutableStateOf("Match")

@@ -5,7 +5,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -42,7 +41,6 @@ import kotlinx.coroutines.launch
 import us.rugulo.matchstats.ui.viewmodel.MatchStatsViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import us.rugulo.matchstats.data.MatchSegmentType
-import us.rugulo.matchstats.data.StatType
 import us.rugulo.matchstats.models.StatOccurrence
 import us.rugulo.matchstats.models.StatOutcome
 
@@ -213,28 +211,14 @@ class MainActivity : ComponentActivity() {
             currentSegment?.let {
                 val stats = if (isHome) it.homeStats else it.awayStats
 
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    StatColumn("Corner", isHome, StatType.CORNER.value, stats)
-                }
-
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    StatColumn("Cross", isHome, StatType.CROSS.value, stats)
-                }
-
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    StatColumn("Shot", isHome, StatType.SHOT.value, stats)
+                for(stat in vm.availableStats){
+                    Column(
+                        Modifier
+                            .weight(1f)
+                            .padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        StatColumn(stat.name, isHome, stat.id, stats)
+                    }
                 }
             }
         }
