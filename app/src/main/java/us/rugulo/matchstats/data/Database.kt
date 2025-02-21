@@ -15,7 +15,7 @@ class Database(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
         db.execSQL("CREATE TABLE Outcomes (ID INTEGER PRIMARY KEY AUTOINCREMENT, TriggeringStatTypeID INT NOT NULL, Name TEXT NOT NULL, NextActionID INT)")
         db.execSQL("INSERT INTO Outcomes (TriggeringStatTypeID, Name, NextActionID) VALUES (1, 'Shot', 2), (1, 'Controlled', NULL), (1, 'Cleared', NULL), (1, 'Corner', 3), (1, 'Out of Play', NULL), (1, 'Other Wing', NULL), (2, 'Blocked', NULL), (2, 'Saved', NULL), (2, 'Goal', NULL), (2, 'Off Target', NULL), (3, 'Short', NULL), (3, 'Cross', 1)")
 
-        db.execSQL("CREATE TABLE Matches (ID INTEGER PRIMARY KEY AUTOINCREMENT, HomeTeam TEXT NOT NULL, AwayTeam TEXT NOT NULL, Notes TEXT)")
+        db.execSQL("CREATE TABLE Matches (ID INTEGER PRIMARY KEY AUTOINCREMENT, HomeTeam TEXT NOT NULL, AwayTeam TEXT NOT NULL, Notes TEXT, WebID TEXT)")
 
         db.execSQL("CREATE TABlE MatchSegments (ID INTEGER PRIMARY KEY AUTOINCREMENT, MatchId INTEGER NOT NULL, SegmentTypeId INTEGER NOT NULL, StartTime INTEGER NOT NULL, EndTime INTEGER)")
 
@@ -23,11 +23,13 @@ class Database(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-        TODO("Not yet implemented")
+        if(newVersion == 2){
+            db!!.execSQL("ALTER TABLE Matches ADD COLUMN WebID TEXT")
+        }
     }
 
     companion object {
-        const val DATABASE_VERSION = 1
+        const val DATABASE_VERSION = 2
         const val DATABASE_NAME = "MatchStats.db"
     }
 }

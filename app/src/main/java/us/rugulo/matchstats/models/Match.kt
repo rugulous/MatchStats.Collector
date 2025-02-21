@@ -1,5 +1,7 @@
 package us.rugulo.matchstats.models
 
+import java.util.UUID
+
 data class Match(
     val id: Int,
     val homeTeam: String,
@@ -7,5 +9,6 @@ data class Match(
     val notes: String,
     val startTimestamp: Int?,
     val homeGoals: Int,
-    val awayGoals: Int
+    val awayGoals: Int,
+    val webId: UUID?
 )

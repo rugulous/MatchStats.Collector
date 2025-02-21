@@ -1,7 +1,9 @@
 package us.rugulo.matchstats.models
 
+import kotlinx.serialization.Serializable
 import us.rugulo.matchstats.data.MatchSegmentType
 
+@Serializable
 data class MatchSegment (
     val id: Int,
     val type: MatchSegmentType,

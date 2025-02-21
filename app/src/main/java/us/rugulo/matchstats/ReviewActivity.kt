@@ -1,6 +1,7 @@
 package us.rugulo.matchstats
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -62,6 +63,17 @@ class ReviewActivity : ComponentActivity() {
     @Preview
     fun ReviewStats(vm: ReviewViewModel = viewModel()) {
         val segments by vm.segments.collectAsState() // Observe state
+        val uploadId by vm.uploadId
+
+        LaunchedEffect(uploadId){
+            uploadId?.let { uuid ->
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("https://totty.luketaylor.rocks/$uuid/")
+                }
+                startActivity(intent)
+                finish()
+            }
+        }
 
         Scaffold(
             topBar = {
@@ -76,6 +88,15 @@ class ReviewActivity : ComponentActivity() {
                         }
                     }
                 )
+            },
+            bottomBar = {
+                BottomAppBar {
+                    if(vm.uploadId.value == null) {
+                        Button(onClick = { vm.uploadMatch() }) {
+                            Text("Export")
+                        }
+                    }
+                }
             }
         ) { padding ->
             Column(
@@ -136,7 +157,7 @@ class ReviewActivity : ComponentActivity() {
             }
         }
 
-        HorizontalPager(state = pagerState) { index ->
+        HorizontalPager(state = pagerState, userScrollEnabled = false) { index ->
             if(index == 0){
                 StatSummary(segments)
             } else {

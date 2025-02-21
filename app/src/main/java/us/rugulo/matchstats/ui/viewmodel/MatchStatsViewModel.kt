@@ -118,6 +118,8 @@ class MatchStatsViewModel(matchSegmentRepository: MatchSegmentRepository) : View
         val statId = segmentRepo.recordStat(segment.id, pending, outcome)
         val occurrence = StatOccurrence(
             statId,
+            pending.homeOrAway,
+            pending.statType.value,
             "",
             pending.timestamp,
             outcome.id,

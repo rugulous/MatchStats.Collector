@@ -1,16 +1,17 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    kotlin("plugin.serialization") version "1.9.22"
 }
 
 android {
     namespace = "us.rugulo.matchstats"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "us.rugulo.matchstats"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -60,6 +61,8 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.okhttp)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

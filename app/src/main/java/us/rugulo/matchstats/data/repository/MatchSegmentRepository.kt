@@ -10,6 +10,7 @@ import us.rugulo.matchstats.models.MatchSegment
 import us.rugulo.matchstats.models.PendingStat
 import us.rugulo.matchstats.models.StatOccurrence
 import us.rugulo.matchstats.models.StatOutcome
+import java.util.UUID
 
 class MatchSegmentRepository(db: Database) {
     private val _db: Database = db
@@ -147,9 +148,18 @@ class MatchSegmentRepository(db: Database) {
     //todo: move this somewhere better
     fun getMatchDetails(id: Int): Match{
         val con = _db.readableDatabase
-        val cursor = con.rawQuery("SELECT ID, HomeTeam, AwayTeam, Notes, ms.StartTime, (SELECT COUNT(*) FROM MatchStats ms INNER JOIN MatchSegments s ON s.ID = ms.MatchSegmentId WHERE StatTypeId = 2 AND OutcomeId = 9 AND HomeOrAway = 1 AND s.MatchId = m.ID) HomeGoals, (SELECT COUNT(*) FROM MatchStats ms INNER JOIN MatchSegments s ON s.ID = ms.MatchSegmentId WHERE StatTypeId = 2 AND OutcomeId = 9 AND HomeOrAway = 0 AND s.MatchId = m.ID) AwayGoals FROM Matches m LEFT OUTER JOIN (SELECT MatchID, MIN(StartTime) StartTime FROM MatchSegments ms GROUP BY MatchID) ms ON ms.MatchID = m.ID WHERE ID = ?", arrayOf(id.toString()))
+        val cursor = con.rawQuery("SELECT ID, HomeTeam, AwayTeam, Notes, ms.StartTime, WebID, (SELECT COUNT(*) FROM MatchStats ms INNER JOIN MatchSegments s ON s.ID = ms.MatchSegmentId WHERE StatTypeId = 2 AND OutcomeId = 9 AND HomeOrAway = 1 AND s.MatchId = m.ID) HomeGoals, (SELECT COUNT(*) FROM MatchStats ms INNER JOIN MatchSegments s ON s.ID = ms.MatchSegmentId WHERE StatTypeId = 2 AND OutcomeId = 9 AND HomeOrAway = 0 AND s.MatchId = m.ID) AwayGoals FROM Matches m LEFT OUTER JOIN (SELECT MatchID, MIN(StartTime) StartTime FROM MatchSegments ms GROUP BY MatchID) ms ON ms.MatchID = m.ID WHERE ID = ?", arrayOf(id.toString()))
 
         cursor.moveToNext()
+        var webId: UUID? = null
+
+        try {
+            webId = UUID.fromString(cursor.getString(cursor.getColumnIndexOrThrow("WebID")))
+        } catch (exception: Exception) {
+            //it's okay if this fails, we might not have uploaded it yet
+        }
+
+
         val result = Match(
             cursor.getInt(cursor.getColumnIndexOrThrow("ID")),
             cursor.getString(cursor.getColumnIndexOrThrow("HomeTeam")),
@@ -157,7 +167,8 @@ class MatchSegmentRepository(db: Database) {
             cursor.getString(cursor.getColumnIndexOrThrow("Notes")),
             cursor.getInt(cursor.getColumnIndexOrThrow("StartTime")),
             cursor.getInt(cursor.getColumnIndexOrThrow("HomeGoals")),
-            cursor.getInt(cursor.getColumnIndexOrThrow("AwayGoals"))
+            cursor.getInt(cursor.getColumnIndexOrThrow("AwayGoals")),
+            webId
         )
         cursor.close()
         con.close()
@@ -196,7 +207,8 @@ class MatchSegmentRepository(db: Database) {
                 cursor.getString(cursor.getColumnIndexOrThrow("Notes")),
                 cursor.getInt(cursor.getColumnIndexOrThrow("StartTime")),
                 cursor.getInt(cursor.getColumnIndexOrThrow("HomeGoals")),
-                cursor.getInt(cursor.getColumnIndexOrThrow("AwayGoals"))
+                cursor.getInt(cursor.getColumnIndexOrThrow("AwayGoals")),
+                null //for now, we don't care about web IDs in lists
             ))
         }
 
@@ -234,6 +246,12 @@ class MatchSegmentRepository(db: Database) {
         return map
     }
 
+    fun storeUploadId(matchId: Int, uploadId: UUID){
+        val con = _db.writableDatabase
+        con.execSQL("UPDATE Matches SET WebID = ? WHERE ID = ?", arrayOf(uploadId, matchId))
+        con.close()
+    }
+
     private fun loadMatchSegment(id: Int, con: SQLiteDatabase): MatchSegment{
         val cursor = con.rawQuery("SELECT ms.ID, ms.SegmentTypeId, ms.StartTime, s.Name, s.Code, s.MinuteOffset FROM MatchSegments ms INNER JOIN MatchSegmentTypes s ON s.ID = ms.SegmentTypeId WHERE ms.ID = ?", arrayOf(id.toString()))
         cursor.moveToNext()
@@ -266,6 +284,8 @@ class MatchSegmentRepository(db: Database) {
             val statType = cursor.getInt(cursor.getColumnIndexOrThrow("StatTypeId"))
             val stat = StatOccurrence(
                 cursor.getInt(cursor.getColumnIndexOrThrow("ID")),
+                homeOrAway,
+                statType,
                 cursor.getString(cursor.getColumnIndexOrThrow("Description")),
                 cursor.getLong(cursor.getColumnIndexOrThrow("Timestamp")),
                 cursor.getInt(cursor.getColumnIndexOrThrow("OutcomeID")),
