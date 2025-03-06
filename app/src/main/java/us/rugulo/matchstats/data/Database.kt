@@ -30,12 +30,12 @@ class Database(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
         }
 
         if(oldVersion < 3 && newVersion >= 3){
-            db.execSQL("ALTER TABLE StatTypes ADD COLUMN IsActive INTEGER NOT NULL")
+            db.execSQL("ALTER TABLE StatTypes ADD COLUMN IsActive INTEGER NOT NULL DEFAULT 1")
             db.execSQL("ALTER TABLE StatTypes ADD COLUMN SortOrder INTEGER")
 
-            db.execSQL("ALTER TABLE Outcomes ADD COLUMN IsActive INTEGER NOT NULL")
+            db.execSQL("ALTER TABLE Outcomes ADD COLUMN IsActive INTEGER NOT NULL DEFAULT 1")
             db.execSQL("ALTER TABLE Outcomes ADD COLUMN SortOrder INTEGER")
-            db.execSQL("ALTER TABLE Outcomes ADD COLUMN IsGoal INTEGER NOT NULL")
+            db.execSQL("ALTER TABLE Outcomes ADD COLUMN IsGoal INTEGER NOT NULL DEFAULT 0")
         }
     }
 
