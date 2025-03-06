@@ -232,7 +232,7 @@ class MatchSegmentRepository(db: Database) {
         val map = mutableMapOf<Int, MutableList<StatOutcome>>()
 
         val con = _db.readableDatabase
-        val cursor = con.query("Outcomes", arrayOf("ID", "TriggeringStatTypeID", "Name", "NextActionID"), null, null, null, null, "SortOrder", null)
+        val cursor = con.query("Outcomes", arrayOf("ID", "TriggeringStatTypeID", "Name", "NextActionID"), "IsActive = 1", null, null, null, "SortOrder", null)
 
         while(cursor.moveToNext()){
             val trigger = cursor.getInt(cursor.getColumnIndexOrThrow("TriggeringStatTypeID"))
